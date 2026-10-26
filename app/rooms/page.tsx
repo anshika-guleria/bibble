@@ -2,6 +2,7 @@
 
 import { RoomGuidelines } from "@/components/rooms/room-guidelines";
 import { StudyRoomCard } from "@/components/rooms/study-room-card";
+import { StudyRoomCardSkeleton } from "@/components/rooms/study-room-card-skeleton";
 import { SiteHeader } from "@/components/site-header";
 import { studyRooms } from "@/data/study-rooms";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -10,11 +11,22 @@ import type { StudyRoom } from "@/types/room";
 import { Plus, Search, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+
+// Number of placeholder cards shown while the room list is loading.
+const SKELETON_COUNT = 4;
+
+const subscribe = () => () => {};
+
+// False on the server and during hydration, true once the client has taken over.
+function useClientReady() {
+  return useSyncExternalStore(subscribe, () => true, () => false);
+}
 
 export default function RoomsPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const ready = useClientReady();
   const [customRooms] = useLocalStorage<StudyRoom[]>(CUSTOM_ROOMS_KEY, []);
   const [pendingRoom, setPendingRoom] = useState<StudyRoom | null>(null);
   const entryTriggerRef = useRef<HTMLButtonElement>(null);
@@ -83,8 +95,8 @@ export default function RoomsPage() {
           />
         </div>
         <div className="rooms-toolbar-actions">
-          <span className="rooms-toolbar-note">
-            {rooms.length} open rooms · no sign-up needed
+          <span className="rooms-toolbar-note" aria-live="polite">
+            {ready ? `${rooms.length} open rooms · no sign-up needed` : "Loading rooms…"}
           </span>
           <Link href="/rooms/new" className="button-primary">
             <Plus size={16} aria-hidden="true" /> Create a room
@@ -92,10 +104,12 @@ export default function RoomsPage() {
         </div>
       </div>
 
-      <section className="room-grid">
-        {rooms.map((room) => (
-          <StudyRoomCard key={room.id} room={room} onEnter={openGuidelines} />
-        ))}
+      <section className="room-grid" aria-busy={!ready} aria-label="Study rooms">
+        {ready
+          ? rooms.map((room) => <StudyRoomCard key={room.id} room={room} onEnter={openGuidelines} />)
+          : Array.from({ length: SKELETON_COUNT }, (_, index) => (
+              <StudyRoomCardSkeleton key={index} />
+            ))}
       </section>
 
       <section className="rooms-callout cozy-wallpaper-pattern">
