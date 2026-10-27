@@ -343,6 +343,23 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     void flowRef.current?.deleteElements({ nodes: [{ id }] });
   };
 
+  /**
+   * React Flow selects a focused node on Enter/Space but never calls onNodeClick,
+   * so open the details panel here. Escape closes it again.
+   */
+  const handleCanvasKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      setSelectedId(null);
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const nodeEl = (event.target as HTMLElement).closest<HTMLElement>(".react-flow__node");
+    const id = nodeEl?.dataset.id;
+    if (!id) return;
+    event.preventDefault();
+    setSelectedId(id);
+  };
+
   const fitView = () => flowRef.current?.fitView({ padding: 0.22 });
 
   const actionsRef = useRef({ add: addBibble, fit: fitView, save: () => saveMap() });
@@ -397,7 +414,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
              canRedo={canRedo}
            />
          )}
-         <div className="map-canvas-wrap">
+         <div className="map-canvas-wrap" onKeyDown={handleCanvasKeyDown}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
