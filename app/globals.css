@@ -1826,6 +1826,7 @@ html.dark .preview-window-line {
 .toolbar-button:hover { background: var(--lavender); color: var(--primary); }
 .toolbar-save { padding: 8px 16px; border-radius: 99px; color: #fff; background: var(--primary); font: 700 12px Arial, sans-serif; border: 0; cursor: pointer; }
 .details-panel { position: absolute; z-index: 5; top: 20px; right: 20px; bottom: 20px; width: 330px; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 20px; background: var(--card); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.details-panel:focus { outline: none; }
 .details-panel-scroll { flex: 1; overflow-y: auto; padding: 24px 24px 0; display: flex; flex-direction: column; gap: 14px; }
 .details-panel-footer { padding: 12px 24px 20px; flex-shrink: 0; background: var(--card); border-top: 1px solid var(--border); }
 .details-unsaved-badge {
@@ -1950,6 +1951,7 @@ html[data-theme="strawberry-lemonade"] .cozy-wallpaper-pattern::before {
 
 .bibble-node { position: relative; width: 155px; min-height: 96px; padding: 18px 16px 14px; border: 1px solid var(--border); border-radius: 26px 20px 24px 18px; background: var(--card); box-shadow: var(--shadow); cursor: pointer; }
 .bibble-node:hover, .bibble-node-selected { box-shadow: 0 13px 27px rgba(0,0,0,.15); border-color: var(--primary); }
+.react-flow__node-bibble:focus-visible > .bibble-node, .bibble-node:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .bibble-node-sparkle { position: absolute; top: 10px; right: 14px; color: var(--primary); }
 .bibble-node-title { padding-right: 14px; color: var(--foreground); font: 700 14px Arial, sans-serif; }
 .bibble-node-status { display: flex; gap: 5px; align-items: center; margin-top: 8px; color: var(--muted); font: 10px Arial, sans-serif; }

@@ -4,7 +4,7 @@ import type { Bibble, BibbleStatus } from "@/types/map";
 import { statusLabels } from "@/types/map";
 import { BookOpen, Check, Circle, ExternalLink, Link2, Plus, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const statusOptions: Array<{ value: BibbleStatus; icon: typeof Circle }> = [
   { value: "not-started", icon: Circle },
@@ -38,6 +38,22 @@ export function BibbleDetails({ bibble, onClose, onChange, onSave }: BibbleDetai
   const [savedFlash, setSavedFlash] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Move focus into the panel when it opens and give it back to whatever
+  // opened it (usually the bibble) when it closes.
+  useEffect(() => {
+    const panel = panelRef.current;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panel?.focus();
+    return () => {
+      // Only restore if focus is still in this panel (or was dropped to the body
+      // because the panel was removed). If another panel already took focus, leave it.
+      const active = document.activeElement;
+      const focusLost = !active || active === document.body || !!panel?.contains(active);
+      if (focusLost && opener?.isConnected) opener.focus();
+    };
+  }, []);
 
   const patch = (partial: Partial<Bibble>) => {
     setDraft((d) => ({ ...d, ...partial }));
@@ -78,8 +94,16 @@ export function BibbleDetails({ bibble, onClose, onChange, onSave }: BibbleDetai
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 28 }}
       transition={{ duration: 0.25 }}
+      ref={panelRef}
+      tabIndex={-1}
       className="details-panel"
       aria-label="Bibble details"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onClose();
+        }
+      }}
     >
       {/* Scrollable content area */}
       <div className="details-panel-scroll">
