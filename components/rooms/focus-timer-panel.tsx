@@ -10,6 +10,7 @@ interface FocusTimerPanelProps {
   active: boolean;
   onToggleActive: () => void;
   onCompleteEarly?: () => void;
+  completeDisabled?: boolean;
   onReset?: () => void;
   isCompleted?: boolean;
   notifications?: {
@@ -25,6 +26,7 @@ export function FocusTimerPanel({
   active,
   onToggleActive,
   onCompleteEarly,
+  completeDisabled = false,
   onReset,
   isCompleted = false,
   notifications,
@@ -78,13 +80,19 @@ export function FocusTimerPanel({
             type="button"
             className="focus-button"
             onClick={onCompleteEarly}
+            disabled={completeDisabled}
             style={{
               background: "var(--surface-soft)",
               color: "var(--primary)",
               border: "1.5px solid var(--border-subtle)",
-              cursor: "pointer",
+              cursor: completeDisabled ? "not-allowed" : "pointer",
+              opacity: completeDisabled ? 0.55 : 1,
             }}
-            title="Mark session complete and record minutes in your progress"
+            title={
+              completeDisabled
+                ? "Start the timer first, then you can log the time you focused"
+                : "Stop the timer and log the time you focused to your progress"
+            }
           >
             <CheckCircle2 size={17} /> Complete &amp; log
           </button>

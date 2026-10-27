@@ -59,8 +59,8 @@ export function useFocusTimer(initialMinutes = 25, onComplete?: () => void) {
   const formattedTime = `${minutesStr}:${secondsStr}`;
 
   const toggleTimer = useCallback(() => {
-    if (isCompleted && seconds === 0) {
-      // If completed and restarted, reset back to full duration
+    if (isCompleted) {
+      // If completed (naturally or early) and restarted, reset back to full duration
       setSeconds(initialMinutes * 60);
       endAtRef.current = null;
       setIsCompleted(false);
@@ -72,7 +72,17 @@ export function useFocusTimer(initialMinutes = 25, onComplete?: () => void) {
       endAtRef.current = null;
     }
     setActive((prev) => !prev);
-  }, [active, initialMinutes, isCompleted, seconds]);
+  }, [active, initialMinutes, isCompleted]);
+
+  // Stop the clock and mark the run as done, for finishing before the countdown hits zero.
+  const completeTimer = useCallback(() => {
+    if (active && endAtRef.current !== null) {
+      setSeconds(Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000)));
+    }
+    endAtRef.current = null;
+    setActive(false);
+    setIsCompleted(true);
+  }, [active]);
 
   const resetTimer = useCallback(() => {
     endAtRef.current = null;
@@ -90,6 +100,7 @@ export function useFocusTimer(initialMinutes = 25, onComplete?: () => void) {
     toggleTimer,
     setActive,
     resetTimer,
+    completeTimer,
     isCompleted,
     setIsCompleted,
   };

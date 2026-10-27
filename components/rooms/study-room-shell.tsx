@@ -51,18 +51,19 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
   const runIdRef = useRef(0);
   const loggedRunIdRef = useRef<number | null>(null);
 
-  const handleSessionComplete = useCallback(() => {
+  // Natural end logs the full room length. "Complete & log" passes the minutes actually focused.
+  const handleSessionComplete = useCallback((minutes: number = room.minutes) => {
     if (loggedRunIdRef.current === runIdRef.current) return;
     loggedRunIdRef.current = runIdRef.current;
 
     recordFocusSession({
-      minutes: room.minutes,
+      minutes,
       roomId: room.id,
       roomName: room.name,
       topic: room.topic,
       completedAt: new Date().toISOString(),
     });
-    triggerToast(`🎉 Completed a ${room.minutes}-min session in ${room.name}! Logged to My Progress.`);
+    triggerToast(`🎉 Completed a ${minutes}-min session in ${room.name}! Logged to My Progress.`);
   }, [room, triggerToast]);
 
   const timerAlerts = useTimerNotifications();
@@ -75,7 +76,7 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
     timerAlerts.notify("Focus session finished", `Nice work, your ${room.minutes}-min session in ${room.name} is done.`);
   }, [handleSessionComplete, timerAlerts, room]);
 
-  const { active, formattedTime, toggleTimer, resetTimer, isCompleted, setIsCompleted } = useFocusTimer(
+  const { active, seconds, formattedTime, toggleTimer, resetTimer, completeTimer, isCompleted } = useFocusTimer(
     room.minutes,
     handleTimerFinished
   );
@@ -88,6 +89,10 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
     else if (result === "unsupported") triggerToast("This browser can't show notifications. You'll still see in-page alerts.");
   };
 
+  // Nothing to log until the clock has moved, and nothing to complete once the run is done.
+  const elapsedSeconds = room.minutes * 60 - seconds;
+  const canCompleteEarly = !isCompleted && elapsedSeconds > 0;
+
   const handleTimerToggle = () => {
     if (isCompleted) runIdRef.current += 1;
     toggleTimer();
@@ -99,8 +104,10 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
   };
 
   const handleManualComplete = () => {
-    handleSessionComplete();
-    setIsCompleted(true);
+    if (!canCompleteEarly) return;
+    // Log the minutes actually focused (at least 1), then stop the clock.
+    handleSessionComplete(Math.max(1, Math.floor(elapsedSeconds / 60)));
+    completeTimer();
   };
 
   const petCat = () => {
@@ -219,6 +226,7 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
             active={active}
             onToggleActive={handleTimerToggle}
             onCompleteEarly={handleManualComplete}
+            completeDisabled={!canCompleteEarly}
             onReset={handleTimerReset}
             isCompleted={isCompleted}
             notifications={{
