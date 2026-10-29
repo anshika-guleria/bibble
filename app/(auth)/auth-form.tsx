@@ -1,7 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { login, signup } from "@/app/actions/auth";
 import { passwordRequirements } from "@/lib/auth/validation";
@@ -26,11 +32,19 @@ function errorText(errors: FieldErrors | undefined, field: string) {
   return Array.isArray(error) ? error[0] : error;
 }
 
+function isConfirmationMessage(message: string | undefined) {
+  return Boolean(message?.startsWith("Account created"));
+}
+
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const { motif } = useTheme();
   const isSignup = mode === "signup";
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [editedFields, setEditedFields] = useState<Record<string, boolean>>({});
   const [state, formAction, pending] = useActionState(
@@ -50,8 +64,18 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const confirmPasswordError =
     visibleError("confirmPassword") ??
     (confirmPasswordMismatch ? "Passwords do not match." : undefined);
+  const message = formState?.message;
+  const isConfirmation = isConfirmationMessage(message);
   const generalMessageVisible =
-    Boolean(formState?.message) && Object.keys(editedFields).length === 0;
+    Boolean(message) && (isConfirmation || Object.keys(editedFields).length === 0);
+  const metRequirements = passwordChecks.filter((check) => check(password)).length;
+  const submitLabel = isSignup
+    ? pending
+      ? "Creating account…"
+      : "Create account"
+    : pending
+      ? "Logging in…"
+      : "Log in";
 
   return (
     <main className={styles.page}>
@@ -60,7 +84,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           <span className="brand-mark">{motif.brandEmoji}</span>
           <span>Bibble</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div className={styles.headerActions}>
           <ThemePicker compact />
           <Link href="/" className={styles.back}>
             Keep browsing <ArrowRight size={15} />
@@ -87,121 +111,188 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
             setEditedFields({});
           }}
         >
-          {isSignup && (
-            <div className={styles.field}>
-              <label htmlFor="name">Name</label>
-              <input
-                id="name"
-                name="name"
-                autoComplete="name"
-                aria-invalid={Boolean(visibleError("name"))}
-                aria-describedby={visibleError("name") ? "name-error" : undefined}
-                onChange={() => markEdited("name")}
-                required
-              />
-              {visibleError("name") && (
-                <p id="name-error" style={{ margin: 0, color: "#b44444", fontSize: "12px" }} role="alert">
-                  {visibleError("name")}
-                </p>
-              )}
-            </div>
-          )}
-          <div className={styles.field}>
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              aria-invalid={Boolean(visibleError("email"))}
-              aria-describedby={visibleError("email") ? "email-error" : undefined}
-              onChange={() => markEdited("email")}
-              required
-            />
-            {visibleError("email") && (
-              <p id="email-error" style={{ margin: 0, color: "#b44444", fontSize: "12px" }} role="alert">
-                {visibleError("email")}
-              </p>
-            )}
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              aria-describedby={
-                isSignup
-                  ? passwordError
-                    ? "password-help password-error"
-                    : "password-help"
-                  : undefined
-              }
-              aria-invalid={Boolean(passwordError)}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                markEdited("password");
-              }}
-              style={passwordError ? { borderColor: "#b44444" } : undefined}
-              required
-            />
+          <fieldset className={styles.fields} disabled={pending}>
             {isSignup && (
-              <>
-                <p id="password-help" className={styles.note} aria-live="polite">
-                  Your password should have:
-                </p>
-                <ul style={{ margin: "-8px 0 0", paddingLeft: "18px", color: "var(--muted)", fontSize: "11px", lineHeight: 1.5 }} aria-label="Password requirements">
-                  {passwordRequirements.map((requirement, index) => (
-                    <li
-                      key={requirement}
-                      style={passwordChecks[index]?.(password) ? { color: "#32845c" } : undefined}
-                    >
-                      {requirement}
-                    </li>
-                  ))}
-                </ul>
-              </>
+              <div className={styles.field}>
+                <label htmlFor="name">Name</label>
+                <input
+                  id="name"
+                  name="name"
+                  autoComplete="name"
+                  placeholder="Ada Lovelace"
+                  minLength={2}
+                  maxLength={50}
+                  value={name}
+                  aria-invalid={Boolean(visibleError("name"))}
+                  aria-describedby={visibleError("name") ? "name-error" : undefined}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    markEdited("name");
+                  }}
+                  required
+                />
+                {visibleError("name") && (
+                  <p id="name-error" className={styles.fieldError} role="alert">
+                    {visibleError("name")}
+                  </p>
+                )}
+              </div>
             )}
-            {passwordError && (
-              <p id="password-error" style={{ margin: 0, color: "#b44444", fontSize: "12px" }} role="alert">
-                {passwordError}
-              </p>
-            )}
-          </div>
-          {isSignup && (
             <div className={styles.field}>
-              <label htmlFor="confirmPassword">Confirm password</label>
+              <label htmlFor="email">Email</label>
               <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                aria-invalid={Boolean(confirmPasswordError)}
-                aria-describedby={confirmPasswordError ? "confirm-password-error" : undefined}
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={email}
+                aria-invalid={Boolean(visibleError("email"))}
+                aria-describedby={visibleError("email") ? "email-error" : undefined}
                 onChange={(event) => {
-                  setConfirmPassword(event.target.value);
-                  markEdited("confirmPassword");
+                  setEmail(event.target.value);
+                  markEdited("email");
                 }}
-                style={confirmPasswordError ? { borderColor: "#b44444" } : undefined}
                 required
               />
-              {confirmPasswordError && (
-                <p id="confirm-password-error" style={{ margin: 0, color: "#b44444", fontSize: "12px" }} role="alert">
-                  {confirmPasswordError}
+              {visibleError("email") && (
+                <p id="email-error" className={styles.fieldError} role="alert">
+                  {visibleError("email")}
                 </p>
               )}
             </div>
-          )}
-          {generalMessageVisible && (
-            <p className={styles.message} role="alert">
-              {formState?.message}
-            </p>
-          )}
-          <button className={styles.submit} type="submit" disabled={pending}>
-            {pending ? "Please wait..." : isSignup ? "Create account" : "Log in"}{" "}
-            <ArrowRight size={16} />
-          </button>
+            <div className={styles.field}>
+              <label htmlFor="password">Password</label>
+              <div className={styles.inputWrap}>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  placeholder={isSignup ? "Create a password" : "Your password"}
+                  value={password}
+                  aria-describedby={
+                    isSignup
+                      ? passwordError
+                        ? "password-help password-error"
+                        : "password-help"
+                      : passwordError
+                        ? "password-error"
+                        : undefined
+                  }
+                  aria-invalid={Boolean(passwordError)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    markEdited("password");
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.reveal}
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+              {isSignup && (
+                <div id="password-help" className={styles.requirements}>
+                  <p className={styles.requirementsHead}>
+                    <span>Password checklist</span>
+                    <span className={styles.requirementsSummary} aria-live="polite">
+                      {metRequirements} of {passwordRequirements.length} met
+                    </span>
+                  </p>
+                  <ul className={styles.requirementList}>
+                    {passwordRequirements.map((requirement, index) => {
+                      const met = passwordChecks[index](password);
+                      return (
+                        <li
+                          key={requirement}
+                          className={met ? styles.requirementMet : styles.requirement}
+                        >
+                          <span className={styles.requirementMark} aria-hidden="true">
+                            {met && <Check size={12} />}
+                          </span>
+                          {requirement}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              {passwordError && (
+                <p id="password-error" className={styles.fieldError} role="alert">
+                  {passwordError}
+                </p>
+              )}
+            </div>
+            {isSignup && (
+              <div className={styles.field}>
+                <label htmlFor="confirmPassword">Confirm password</label>
+                <div className={styles.inputWrap}>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    aria-invalid={Boolean(confirmPasswordError)}
+                    aria-describedby={
+                      confirmPasswordError ? "confirm-password-error" : undefined
+                    }
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      markEdited("confirmPassword");
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.reveal}
+                    onClick={() => setShowConfirmPassword((value) => !value)}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
+                    aria-pressed={showConfirmPassword}
+                  >
+                    {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+                {confirmPasswordError && (
+                  <p id="confirm-password-error" className={styles.fieldError} role="alert">
+                    {confirmPasswordError}
+                  </p>
+                )}
+              </div>
+            )}
+            {generalMessageVisible && (
+              <p
+                className={isConfirmation ? styles.messageSuccess : styles.messageError}
+                role={isConfirmation ? "status" : "alert"}
+              >
+                {isConfirmation && (
+                  <Check size={16} className={styles.messageIcon} aria-hidden="true" />
+                )}
+                <span>{message}</span>
+              </p>
+            )}
+            <button className={styles.submit} type="submit" disabled={pending}>
+              {pending ? (
+                <span className={styles.spinner} aria-hidden="true" />
+              ) : (
+                <ArrowRight size={16} aria-hidden="true" />
+              )}
+              <span>{submitLabel}</span>
+            </button>
+          </fieldset>
         </form>
         <p className={styles.switch}>
           {isSignup ? (

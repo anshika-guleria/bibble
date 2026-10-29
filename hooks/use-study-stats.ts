@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DailyStreakInfo, FocusSession, MapProgressItem } from "@/types/progress";
 import type { LearningMap } from "@/types/map";
+import { sampleMaps } from "@/data/sample-maps";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
   calculateStreak,
@@ -82,6 +83,11 @@ export function useStudyStats() {
     };
   }, [mapItems]);
 
+  const personalMapCount = useMemo(
+    () => storedMaps.filter((map) => !sampleMaps.some((sample) => sample.id === map.id)).length,
+    [storedMaps]
+  );
+
   const recordSession = useCallback(
     (input: {
       minutes: number;
@@ -111,6 +117,7 @@ export function useStudyStats() {
     streak,
     mapItems,
     mapOverview,
+    personalMapCount,
     hydrated,
     recordSession,
     resetStats,
