@@ -230,6 +230,30 @@ bibble/
 
 ---
 
+## ⌨️ Map editor keyboard shortcuts
+
+In the map editor (`/map/[id]/edit`), press `?` or use the keyboard icon in the toolbar to open the in-app shortcuts guide. The list lives in `lib/map-shortcuts.ts`.
+
+| Shortcut | Action |
+| --- | --- |
+| `N` | Add a new bibble |
+| `F` | Fit the whole map in view |
+| `Ctrl/Cmd + S` | Save the map |
+| `?` | Open or close the shortcuts guide |
+| `Tab` | Move focus to the next bibble |
+| `Enter` / `Space` | Select the focused bibble |
+| `Esc` | Deselect the focused bibble |
+| Arrow keys | Move the selected bibble (`Shift` for bigger steps) |
+| `Backspace` | Delete the selected bibbles or connections |
+| `Shift` + drag | Box-select bibbles |
+| `Ctrl/Cmd` + click | Add or remove a bibble from the selection |
+| `Space` + drag | Pan the canvas |
+| `Ctrl/Cmd` + scroll | Zoom the canvas |
+
+Single-key shortcuts are ignored while typing in a text field. The canvas shortcuts come from React Flow's defaults; if you change canvas key props, update `lib/map-shortcuts.ts` too.
+
+---
+
 ## 🧩 Core concepts for contributors
 
 ### Learning map

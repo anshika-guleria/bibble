@@ -941,6 +941,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .room-search { width: 320px; display: flex; gap: 10px; align-items: center; padding: 12px 18px; border: 1px solid var(--border); border-radius: 99px; color: var(--muted); background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
 .room-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--foreground); font: 13px Arial, sans-serif; }
 
+.room-filters { width: min(1180px, calc(100% - 48px)); margin: -12px auto 28px; display: grid; gap: 12px; }
+.room-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.room-filter-label { min-width: 84px; font: 700 12px Arial, sans-serif; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.room-filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.room-filter-chip { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: 600 12px Arial, sans-serif; cursor: pointer; }
+.room-filter-chip small { margin-left: 4px; color: var(--muted); font-size: 11px; }
+.room-filter-chip[aria-pressed="true"] { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+.room-filter-chip[aria-pressed="true"] small { color: inherit; opacity: 0.75; }
+.room-filter-chip:focus-visible, .room-filter-clear:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.room-filter-clear { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; border: 1px dashed var(--border); background: transparent; color: var(--foreground); font: 600 12px Arial, sans-serif; cursor: pointer; }
+.rooms-empty { width: min(1180px, calc(100% - 48px)); margin: 0 auto 48px; padding: 40px 24px; text-align: center; border: 1px dashed var(--border); border-radius: 24px; display: grid; justify-items: center; gap: 10px; }
+.rooms-empty p { color: var(--muted); }
 .room-grid {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto 80px;
@@ -2496,6 +2508,24 @@ html.dark[data-theme="strawberry-lemonade"] {
     left: -15px;
     font-size: 24px;
   }
+}
+
+/* Map editor shortcuts guide */
+.shortcuts-dialog { max-width: 520px; max-height: min(86vh, 720px); overflow-y: auto; padding: 24px; }
+.shortcuts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.shortcuts-header h3 { margin: 0; }
+.shortcuts-dialog h4 { margin: 16px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.shortcuts-list { margin: 0; }
+.shortcuts-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.shortcuts-row dt { flex: 0 0 auto; max-width: 55%; font-size: 13px; }
+.shortcuts-row dd { margin: 0; text-align: right; font-size: 14px; color: var(--foreground); }
+.shortcuts-dialog kbd { display: inline-block; min-width: 22px; padding: 2px 7px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px; background: var(--lavender); color: var(--foreground); font: 700 12px var(--font-body), sans-serif; text-align: center; }
+.shortcuts-or { color: var(--muted); font-size: 12px; }
+.shortcuts-dialog .shortcuts-note { margin: 16px 0 0; font-size: 13px; }
+@media (max-width: 480px) {
+  .shortcuts-row { flex-direction: column; gap: 4px; }
+  .shortcuts-row dt { max-width: none; }
+  .shortcuts-row dd { text-align: left; }
 }
 
 /* Loading skeletons (room list) */

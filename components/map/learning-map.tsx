@@ -4,6 +4,8 @@ import { BibbleDetails } from "@/components/bibble/bibble-details";
 import { BibbleNode } from "@/components/bibble/bibble-node";
 import { MapToolbar } from "@/components/map/map-toolbar";
 import { MapHeader } from "@/components/map/map-header";
+import { ShortcutsDialog } from "@/components/map/shortcuts-dialog";
+import { getShortcutAction, isEditableTarget } from "@/lib/map-shortcuts";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
 import { saveMapToSupabase } from "@/lib/maps/persistence";
@@ -91,6 +93,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [storedMaps, setStoredMaps, hydrated] = useLocalStorage<LearningMap[]>("bibble-maps", []);
   const flowRef = useRef<ReactFlowInstance<Node<BibbleNodeData>, Edge> | null>(null);
   const historyRef = useRef<EditHistory | null>(null);
@@ -327,6 +330,27 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
 
   const fitView = () => flowRef.current?.fitView({ padding: 0.22 });
 
+  const actionsRef = useRef({ add: addBibble, fit: fitView, save: () => saveMap() });
+  useEffect(() => {
+    actionsRef.current = { add: addBibble, fit: fitView, save: () => saveMap() };
+  });
+
+  useEffect(() => {
+    if (!editable) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.repeat || isEditableTarget(event.target as HTMLElement | null)) return;
+      const action = getShortcutAction(event);
+      if (!action) return;
+      event.preventDefault();
+      if (action === "help") setShowShortcuts(true);
+      else actionsRef.current[action]();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [editable]);
+
+  const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
+
   const currentMap = flowToMap(initialMap, nodes, edges);
   const progress = getMapProgress(currentMap);
 
@@ -352,6 +376,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
              onRedo={redo}
              onFit={fitView}
              onSave={() => saveMap()}
+             onShowShortcuts={() => setShowShortcuts(true)}
              saved={saved}
              canUndo={canUndo}
              canRedo={canRedo}
@@ -391,6 +416,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     {saveError && <p role="alert" style={{ margin: "10px 0", color: "var(--danger, #b42318)" }}>{saveError}</p>}
     <AnimatePresence>{selected && <BibbleDetails key={selected.id} bibble={selected} onClose={() => setSelectedId(null)} onChange={updateSelected} onSave={saveMap} />}</AnimatePresence>
     {editable && selected && <button className="delete-bibble" onClick={() => deleteBibble(selected.id)}><Trash2 size={15} /> Delete bibble</button>}
+    {editable && showShortcuts && <ShortcutsDialog onClose={closeShortcuts} />}
     {editable && <div className="editor-back-link"><ArrowLeft size={15} /> <span>Changes are kept on this device</span></div>}
   </div>
 </main>

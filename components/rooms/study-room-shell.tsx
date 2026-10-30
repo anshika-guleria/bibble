@@ -12,7 +12,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useTheme } from "@/hooks/use-theme";
 import type { StudyRoom } from "@/types/room";
 import { recordFocusSession } from "@/lib/progress";
-import { ArrowLeft, Bell, BookOpen, Headphones, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Headphones, Sparkles, Users } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
@@ -85,6 +85,7 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
     if (result === "enabled") triggerToast("Timer alerts on. We will notify you when the session ends 🔔");
     else if (result === "disabled") triggerToast("Timer alerts turned off");
     else if (result === "denied") triggerToast("Notifications are blocked, allow them in your browser settings to get alerts");
+    else if (result === "unsupported") triggerToast("This browser can't show notifications. You'll still see in-page alerts.");
   };
 
   const handleTimerToggle = () => {
@@ -137,11 +138,23 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
         </Link>
         <div className="room-header-actions">
           <ThemePicker compact />
-          <button className="room-icon-button" aria-label="Room notifications">
-            <Bell size={17} />
+          {/* Same switch as "Timer alerts" in the focus timer panel: one preference, two controls. */}
+          <button
+            type="button"
+            className="room-icon-button"
+            aria-label="Room notifications"
+            aria-pressed={timerAlerts.enabled}
+            title={timerAlerts.enabled ? "Notifications on" : "Notifications off"}
+            onClick={handleAlertsToggle}
+          >
+            {timerAlerts.enabled ? <Bell size={17} /> : <BellOff size={17} />}
           </button>
         </div>
       </header>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {timerAlerts.enabled ? "Room notifications on" : "Room notifications off"}
+      </p>
 
       {toastMessage && (
         <motion.div
