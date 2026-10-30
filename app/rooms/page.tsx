@@ -3,6 +3,7 @@
 import { RoomFilterPanel } from "@/components/rooms/room-filters";
 import { RoomGuidelines } from "@/components/rooms/room-guidelines";
 import { StudyRoomCard } from "@/components/rooms/study-room-card";
+import { StudyRoomCardSkeleton } from "@/components/rooms/study-room-card-skeleton";
 import { SiteHeader } from "@/components/site-header";
 import { studyRooms } from "@/data/study-rooms";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -18,12 +19,23 @@ import type { StudyRoom } from "@/types/room";
 import { Plus, Search, Star, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+
+// Number of placeholder cards shown while the room list is loading.
+const SKELETON_COUNT = 4;
+
+const subscribe = () => () => {};
+
+// False on the server and during hydration, true once the client has taken over.
+function useClientReady() {
+  return useSyncExternalStore(subscribe, () => true, () => false);
+}
 
 export default function RoomsPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<RoomFilters>(emptyRoomFilters);
+  const ready = useClientReady();
   const [customRooms] = useLocalStorage<StudyRoom[]>(CUSTOM_ROOMS_KEY, []);
   const [pendingRoom, setPendingRoom] = useState<StudyRoom | null>(null);
   const entryTriggerRef = useRef<HTMLButtonElement>(null);
@@ -111,7 +123,9 @@ export default function RoomsPage() {
         </div>
         <div className="rooms-toolbar-actions">
           <span className="rooms-toolbar-note" role="status" aria-live="polite">
-            {rooms.length} {rooms.length === 1 ? "open room" : "open rooms"} · no sign-up needed
+            {ready
+              ? `${rooms.length} ${rooms.length === 1 ? "open room" : "open rooms"} · no sign-up needed`
+              : "Loading rooms…"}
           </span>
           <Link href="/rooms/new" className="button-primary">
             <Plus size={16} aria-hidden="true" /> Create a room
@@ -119,10 +133,16 @@ export default function RoomsPage() {
         </div>
       </div>
 
-      <RoomFilterPanel options={options} filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
+      {ready && <RoomFilterPanel options={options} filters={filters} onToggle={toggleFilter} onClear={clearFilters} />}
 
-      {rooms.length > 0 ? (
-        <section className="room-grid">
+      {!ready ? (
+        <section className="room-grid" aria-busy="true" aria-label="Study rooms">
+          {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+            <StudyRoomCardSkeleton key={index} />
+          ))}
+        </section>
+      ) : rooms.length > 0 ? (
+        <section className="room-grid" aria-label="Study rooms">
           {rooms.map((room) => (
             <StudyRoomCard key={room.id} room={room} onEnter={openGuidelines} />
           ))}
