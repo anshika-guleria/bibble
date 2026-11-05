@@ -7,6 +7,7 @@ import { MapHeader } from "@/components/map/map-header";
 import { ShortcutsDialog } from "@/components/map/shortcuts-dialog";
 import { getShortcutAction, isEditableTarget } from "@/lib/map-shortcuts";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
@@ -88,7 +89,11 @@ const createHistory = (nodes: Node<BibbleNodeData>[], edges: Edge[]): EditHistor
 });
 
 export function LearningMapCanvas({ initialMap, editable = false, preferInitialMap = false }: { initialMap: LearningMap; editable?: boolean; preferInitialMap?: boolean }) {
-  const initialFlow = useMemo(() => mapToFlow(initialMap), [initialMap]);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const initialFlow = useMemo(
+    () => mapToFlow(initialMap, { animated: !prefersReducedMotion }),
+    [initialMap, prefersReducedMotion],
+  );
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BibbleNodeData>>(initialFlow.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlow.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -116,6 +121,12 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   useEffect(() => {
     edgesRef.current = edges;
   }, [edges]);
+
+  useEffect(() => {
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => (edge.animated !== !prefersReducedMotion ? { ...edge, animated: !prefersReducedMotion } : edge)),
+    );
+  }, [prefersReducedMotion, setEdges]);
 
   const selected = nodes.find((node) => node.id === selectedId)?.data as BibbleNodeData | undefined;
 
@@ -236,7 +247,12 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   const onConnect = useCallback(
     (connection: Connection) => {
       const nextEdges = addEdge(
-        { ...connection, type: "smoothstep", animated: true, style: { stroke: "var(--canvas-edge)", strokeWidth: 2 } },
+        {
+          ...connection,
+          type: "smoothstep",
+          animated: !prefersReducedMotion,
+          style: { stroke: "var(--canvas-edge)", strokeWidth: 2 },
+        },
         edgesRef.current,
       );
       if (nextEdges === edgesRef.current) return;
@@ -244,7 +260,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
       setEdges(nextEdges);
       recordHistory(nodesRef.current, nextEdges);
     },
-    [recordHistory, setEdges],
+    [prefersReducedMotion, recordHistory, setEdges],
   );
 
   /** Update a single node in React state (immediate UI feedback) and record one committed edit. */
@@ -361,7 +377,11 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     setSelectedId(id);
   };
 
-  const fitView = () => flowRef.current?.fitView({ padding: 0.22 });
+  const fitView = () =>
+    flowRef.current?.fitView({
+      padding: 0.22,
+      duration: prefersReducedMotion ? 0 : undefined,
+    });
 
   const handleExport = useCallback(() => {
     const current = flowToMap(initialMap, nodesRef.current, edgesRef.current);
@@ -429,7 +449,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
         onInit={(instance) => {
           flowRef.current = instance;
           setTimeout(() => {
-            instance.fitView({ padding: 0.22 });
+            instance.fitView({ padding: 0.22, duration: prefersReducedMotion ? 0 : undefined });
           }, 40);
         }}
         onNodesChange={onNodesChange}
@@ -443,11 +463,15 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
         nodesConnectable={editable}
         elementsSelectable
         fitView
-        fitViewOptions={{ padding: 0.22 }}
+        fitViewOptions={{ padding: 0.22, duration: prefersReducedMotion ? 0 : undefined }}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Lines} color="color-mix(in srgb, var(--border) 60%, transparent)" gap={28} />
-        <Controls position="bottom-left" showInteractive={false} />
+        <Controls
+          position="bottom-left"
+          showInteractive={false}
+          fitViewOptions={{ padding: 0.22, duration: prefersReducedMotion ? 0 : undefined }}
+        />
         <MiniMap position="bottom-right" nodeColor="var(--canvas-node)" />
       </ReactFlow>
       {!editable && <div className="map-canvas-hint"><Star size={14} /> Click a bibble to explore it</div>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { BibbleNode } from "@/components/bibble/bibble-node";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { mapToFlow } from "@/lib/map-utils";
 import type { BibbleNodeData, LearningMap } from "@/types/map";
 import {
@@ -16,7 +17,8 @@ import { useCallback, useMemo, useState } from "react";
 const nodeTypes = { bibble: BibbleNode };
 
 export function MapPreview({ map, compact = false }: { map: LearningMap; compact?: boolean }) {
-  const initial = useMemo(() => mapToFlow(map), [map]);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const initial = useMemo(() => mapToFlow(map, { animated: !prefersReducedMotion }), [map, prefersReducedMotion]);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   // Only the interactive preview needs a mutable copy of the nodes. Cards and
   // the create page read them straight from the map data, so they stay in sync
@@ -43,7 +45,10 @@ export function MapPreview({ map, compact = false }: { map: LearningMap; compact
         nodeTypes={nodeTypes}
         onInit={(instance) => {
           const timer = setTimeout(() => {
-            instance.fitView({ padding: compact ? 0.35 : 0.25 });
+            instance.fitView({
+              padding: compact ? 0.35 : 0.25,
+              duration: prefersReducedMotion ? 0 : undefined,
+            });
           }, 40);
           return () => clearTimeout(timer);
         }}
@@ -55,11 +60,22 @@ export function MapPreview({ map, compact = false }: { map: LearningMap; compact
         panOnDrag
         zoomOnScroll
         fitView
-        fitViewOptions={{ padding: compact ? 0.35 : 0.25 }}
+        fitViewOptions={{
+          padding: compact ? 0.35 : 0.25,
+          duration: prefersReducedMotion ? 0 : undefined,
+        }}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Lines} color="color-mix(in srgb, var(--border) 60%, transparent)" gap={28} />
-        {!compact && <Controls showInteractive={false} />}
+        {!compact && (
+          <Controls
+            showInteractive={false}
+            fitViewOptions={{
+              padding: compact ? 0.35 : 0.25,
+              duration: prefersReducedMotion ? 0 : undefined,
+            }}
+          />
+        )}
       </ReactFlow>
     </div>
   );

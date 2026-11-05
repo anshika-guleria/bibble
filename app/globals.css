@@ -2558,12 +2558,40 @@ html.dark[data-theme="strawberry-lemonade"] {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .skeleton, .skeleton-art { animation: none; }
-}
 .save-indicator { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .save-indicator-unsaved { color: var(--foreground, inherit); }
 .save-indicator-error { color: var(--danger, #b42318); }
 .save-indicator-spin { animation: save-indicator-spin 1s linear infinite; }
 @keyframes save-indicator-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .save-indicator-spin { animation: none; } }
+
+/* ==========================================================================
+   REDUCED MOTION (A11Y)
+   Respect user preference for reduced motion across the application.
+   Disables non-essential motion while preserving layout and functionality.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable decorative looping animations explicitly */
+  .decoration,
+  .preview-mug,
+  .steam,
+  .skeleton,
+  .skeleton-art,
+  .save-indicator-spin {
+    animation: none !important;
+  }
+
+  /* Turn off animated edges in the map */
+  .react-flow__edge.animated path {
+    animation: none !important;
+    stroke-dasharray: none !important;
+  }
+}

@@ -1,7 +1,11 @@
 import type { BibbleNodeData, LearningMap } from "@/types/map";
 import type { Edge, Node } from "@xyflow/react";
 
-export function mapToFlow(map: LearningMap): { nodes: Node<BibbleNodeData>[]; edges: Edge[] } {
+export function mapToFlow(
+  map: LearningMap,
+  options?: { animated?: boolean },
+): { nodes: Node<BibbleNodeData>[]; edges: Edge[] } {
+  const animated = options?.animated ?? true;
   return {
     nodes: map.bibbles.map((bibble) => ({
       id: bibble.id,
@@ -15,7 +19,7 @@ export function mapToFlow(map: LearningMap): { nodes: Node<BibbleNodeData>[]; ed
     edges: map.edges.map((edge) => ({
       ...edge,
       type: "smoothstep",
-      animated: true,
+      animated,
       style: { stroke: "var(--primary)", strokeWidth: 2 },
     })),
   };

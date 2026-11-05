@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { MotionConfig } from "motion/react";
 import { BibbleError, ErrorType } from "./bibble-error";
 
 function subscribeOnlineStatus(callback: () => void) {
@@ -32,13 +33,15 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
 
   if (errorType) {
     return (
-      <div className="error-page">
-        <main className="not-found-main">
-          <BibbleError type={errorType} onRetry={handleRetry} />
-        </main>
-      </div>
+      <MotionConfig reducedMotion="user">
+        <div className="error-page">
+          <main className="not-found-main">
+            <BibbleError type={errorType} onRetry={handleRetry} />
+          </main>
+        </div>
+      </MotionConfig>
     );
   }
 
-  return <>{children}</>;
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }

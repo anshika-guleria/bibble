@@ -1,6 +1,7 @@
 "use client";
 
 import type { NotificationSupport } from "@/hooks/use-timer-notifications";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { Bell, BellOff, CheckCircle2, Clock3, Pause, Play, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -31,6 +32,8 @@ export function FocusTimerPanel({
   isCompleted = false,
   notifications,
 }: FocusTimerPanelProps) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
     <div className="focus-panel">
       <div className="focus-panel-heading">
@@ -41,8 +44,11 @@ export function FocusTimerPanel({
       </div>
       <div className="focus-clock">
         <motion.span
-          animate={{ scale: active ? [1, 1.02, 1] : 1 }}
-          transition={{ repeat: active ? Infinity : 0, duration: 2 }}
+          animate={{ scale: active && !prefersReducedMotion ? [1, 1.02, 1] : 1 }}
+          transition={{
+            repeat: active && !prefersReducedMotion ? Infinity : 0,
+            duration: prefersReducedMotion ? 0 : 2,
+          }}
         >
           {formattedTime}
         </motion.span>
