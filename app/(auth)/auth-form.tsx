@@ -78,8 +78,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       : "Log in";
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
+    <div className={styles.page}>
+      <header className={styles.header} aria-label="Auth header">
         <Link href="/" className="brand">
           <span className="brand-mark">{motif.brandEmoji}</span>
           <span>Bibble</span>
@@ -91,6 +91,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           </Link>
         </div>
       </header>
+      <main id="main-content" tabIndex={-1}>
       <section className={styles.shell} aria-labelledby="auth-title">
         <span className={"eyebrow " + styles.eyebrow}>
           <Sparkles size={14} /> Your little learning corner
@@ -309,6 +310,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           Your password is securely handled by Supabase Auth and is never stored in plaintext.
         </p>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

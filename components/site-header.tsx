@@ -12,7 +12,7 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="site-header">
+    <header className="site-header" aria-label="Site header">
       <div className="site-header-inner">
         <Link href="/" className="brand">
           <span className="brand-mark">{motif.brandEmoji}</span>

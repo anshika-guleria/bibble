@@ -38,7 +38,7 @@ export default function EditMapPage() {
 
   if (!hydrated || (remoteLoading && !map)) {
     return (
-      <main className="empty-state">
+      <main id="main-content" tabIndex={-1} className="empty-state">
         <h2>Loading map…</h2>
       </main>
     );
@@ -46,7 +46,7 @@ export default function EditMapPage() {
 
   if (!map) {
     return (
-      <main className="empty-state">
+      <main id="main-content" tabIndex={-1} className="empty-state">
         <h2>This map wandered off.</h2>
         <Link href="/explore" className="text-link">
           Back to explore <ArrowLeft size={15} />
@@ -56,7 +56,7 @@ export default function EditMapPage() {
   }
 
   return (
-    <main className="map-page">
+    <div className="map-page">
       <MapHeader
         title={map.title}
         category={map.category}
@@ -64,6 +64,6 @@ export default function EditMapPage() {
         isEditing
       />
       <LearningMapCanvas key={map.id} initialMap={map} editable preferInitialMap={Boolean(remoteMap)} />
-    </main>
+    </div>
   );
 }

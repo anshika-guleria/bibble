@@ -393,7 +393,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   const progress = getMapProgress(currentMap);
 
   return (
-     <main className={`map-page ${editable ? "learning-map-editor" : ""}`}>
+     <main id="main-content" tabIndex={-1} className={`map-page ${editable ? "learning-map-editor" : ""}`}>
        {!editable && <MapHeader map={currentMap} onSave={() => saveMap()} saved={justSaved} />}
        {!editable && (
          <div className="map-page-copy">

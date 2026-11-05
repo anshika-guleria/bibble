@@ -96,8 +96,9 @@ export default function RoomsPage() {
   const emptyState = getRoomEmptyState(query, countActiveFilters(filters));
 
   return (
-    <main className="rooms-page">
+    <div className="rooms-page">
       <SiteHeader />
+      <main id="main-content" tabIndex={-1}>
       <section className="rooms-intro">
         <div>
           <span className="eyebrow">
@@ -197,6 +198,7 @@ export default function RoomsPage() {
           onConfirm={confirmEntry}
         />
       )}
-    </main>
+      </main>
+    </div>
   );
 }

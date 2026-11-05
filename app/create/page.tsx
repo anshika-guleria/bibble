@@ -100,9 +100,9 @@ export default function CreatePage() {
   }
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <CreateMapHeader />
-      <div className={styles.layout}>
+      <main id="main-content" tabIndex={-1} className={styles.layout}>
         <CreateMapIntro map={previewMap} />
         <CreateMapForm
           values={values}
@@ -112,7 +112,7 @@ export default function CreatePage() {
           importError={importError}
         />
         {saveError && <p role="alert" style={{ color: "var(--danger, #b42318)" }}>{saveError}</p>}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

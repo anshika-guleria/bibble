@@ -134,8 +134,8 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
   };
 
   return (
-    <main className="room-page">
-      <header className="room-header">
+    <div className="room-page">
+      <header className="room-header" aria-label="Room header">
         <Link href="/rooms" className="back-link">
           <ArrowLeft size={15} /> All rooms
         </Link>
@@ -174,7 +174,7 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
         </motion.div>
       )}
 
-      <div className="room-layout">
+      <main id="main-content" tabIndex={-1} className="room-layout">
         <section className="room-main">
           {/* Interactive 2D Roomscape Scene */}
           <StudyRoomScene
@@ -252,9 +252,9 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
           onNoteInputChange={setNote}
           onAddNote={handleAddNote}
         />
-      </div>
+      </main>
 
       <RoomGuidelines roomName={room.name} open={guidelinesOpen} onClose={closeGuidelines} />
-    </main>
+    </div>
   );
 }

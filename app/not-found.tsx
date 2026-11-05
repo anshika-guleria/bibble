@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <div className="not-found-page">
       <SiteHeader />
-      <main className="not-found-main">
+      <main id="main-content" tabIndex={-1} className="not-found-main">
         <BibbleError type="not-found" />
       </main>
     </div>

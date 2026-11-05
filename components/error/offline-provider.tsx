@@ -33,7 +33,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   if (errorType) {
     return (
       <div className="error-page">
-        <main className="not-found-main">
+        <main id="main-content" tabIndex={-1} className="not-found-main">
           <BibbleError type={errorType} onRetry={handleRetry} />
         </main>
       </div>

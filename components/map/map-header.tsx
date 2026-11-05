@@ -34,7 +34,7 @@ export function MapHeader({
   const mapId = map?.id ?? mapIdProp ?? "";
 
   return (
-    <header className="map-page-header">
+    <header className="map-page-header" aria-label="Map header">
       <Link href="/explore" className="brand" aria-label="Bibble explore">
         <span className="brand-mark" aria-hidden="true">
           {motif.brandEmoji}

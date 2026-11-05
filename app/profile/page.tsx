@@ -440,9 +440,9 @@ export default function ProfilePage() {
   const hasDetails = profileHasDetails(profile);
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <SiteHeader />
-      <div className={styles.container}>
+      <main id="main-content" tabIndex={-1} className={styles.container}>
         <header className={styles.hero}>
           <p className={styles.eyebrow}>
             <UserRound size={14} aria-hidden="true" /> Your profile
@@ -1339,7 +1339,7 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

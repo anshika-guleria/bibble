@@ -116,10 +116,10 @@ export default function ProgressPage() {
   };
 
   return (
-    <main className={styles.progressPage}>
+    <div className={styles.progressPage}>
       <SiteHeader />
 
-      <div className={styles.container}>
+      <main id="main-content" tabIndex={-1} className={styles.container}>
         {/* Page Hero */}
         <section className={styles.hero}>
           <div className={styles.heroContent}>
@@ -460,7 +460,7 @@ export default function ProgressPage() {
             </div>
           </section>
         )}
-      </div>
+      </main>
 
       {/* Quick Log Session Modal */}
       {isLogModalOpen && (
@@ -603,6 +603,6 @@ export default function ProgressPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

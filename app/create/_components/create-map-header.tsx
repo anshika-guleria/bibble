@@ -8,7 +8,7 @@ export function CreateMapHeader() {
   const { motif } = useTheme();
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} aria-label="Create map header">
       <Link href="/" className="brand" aria-label="Bibble home">
         <span className="brand-mark" aria-hidden="true">
           {motif.brandEmoji}

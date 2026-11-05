@@ -41,7 +41,7 @@ export function MapPageClient() {
 
   if (!hydrated || (remoteLoading && !resolvedMap)) {
     return (
-      <main className="empty-state">
+      <main id="main-content" tabIndex={-1} className="empty-state">
         <h2>Loading map…</h2>
       </main>
     );
@@ -49,7 +49,7 @@ export function MapPageClient() {
 
   if (!resolvedMap) {
     return (
-      <main className="empty-state">
+      <main id="main-content" tabIndex={-1} className="empty-state">
         <h2>This map wandered off.</h2>
         <Link href="/explore" className="text-link">
           Back to explore <ArrowLeft size={15} />

@@ -63,9 +63,9 @@ export default function NewRoomPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <SiteHeader />
-      <div className={styles.layout}>
+      <main id="main-content" tabIndex={-1} className={styles.layout}>
         <Link href="/rooms" className="back-link">
           <ArrowLeft size={15} aria-hidden="true" /> Back to study rooms
         </Link>
@@ -165,7 +165,7 @@ export default function NewRoomPage() {
             Create room <ArrowUpRight size={17} aria-hidden="true" />
           </button>
         </form>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
