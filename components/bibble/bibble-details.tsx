@@ -2,6 +2,7 @@
 
 import type { Bibble, BibbleStatus } from "@/types/map";
 import { statusLabels } from "@/types/map";
+import { createResourceId, isValidResourceUrl, validateResourceUrl } from "@/lib/resource-url";
 import { BookOpen, Check, Circle, ExternalLink, Link2, Plus, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -38,6 +39,10 @@ export function BibbleDetails({ bibble, onClose, onChange, onSave }: BibbleDetai
   const [draft, setDraft] = useState<Bibble | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingResource, setIsAddingResource] = useState(false);
+  const [newResourceLabel, setNewResourceLabel] = useState("");
+  const [newResourceUrl, setNewResourceUrl] = useState("");
+  const [resourceUrlError, setResourceUrlError] = useState<string | null>(null);
   const panelRef = useRef<HTMLElement>(null);
 
   // Move focus into the panel when it opens and give it back to whatever
@@ -57,14 +62,75 @@ export function BibbleDetails({ bibble, onClose, onChange, onSave }: BibbleDetai
 
   const committed = { ...bibble, progress: safeProgress(bibble.progress) };
   const value = draft ?? committed;
+  const safeResources = (value.resources ?? []).filter((r) => isValidResourceUrl(r.url));
   const isDirty = draft !== null;
 
   const patch = (partial: Partial<Bibble>) => {
     setDraft((current) => ({ ...(current ?? committed), ...partial }));
   };
 
+  const handleOpenAddResource = () => {
+    setIsAddingResource(true);
+    setNewResourceLabel("");
+    setNewResourceUrl("");
+    setResourceUrlError(null);
+  };
+
+  const handleCancelAddResource = () => {
+    setIsAddingResource(false);
+    setNewResourceLabel("");
+    setNewResourceUrl("");
+    setResourceUrlError(null);
+  };
+
+  const handleSaveResource = () => {
+    const validation = validateResourceUrl(newResourceUrl);
+    if (!validation.valid) {
+      setResourceUrlError(validation.error || "Please enter a valid URL.");
+      return;
+    }
+
+    const trimmedLabel = newResourceLabel.trim();
+    const finalLabel = trimmedLabel || validation.url!;
+    const newResource = {
+      id: createResourceId(),
+      label: finalLabel,
+      url: validation.url!,
+    };
+
+    const updated = [...(value.resources ?? []), newResource];
+    patch({ resources: updated });
+    setIsAddingResource(false);
+    setNewResourceLabel("");
+    setNewResourceUrl("");
+    setResourceUrlError(null);
+  };
+
+  const handleRemoveResource = (id: string) => {
+    const updated = (value.resources ?? []).filter((r) => r.id !== id);
+    patch({ resources: updated });
+  };
+
   const handleSave = () => {
     if (isSaving) return;
+
+    if (isAddingResource && newResourceUrl.trim()) {
+      const validation = validateResourceUrl(newResourceUrl);
+      if (!validation.valid) {
+        setResourceUrlError(validation.error || "Please enter a valid URL.");
+        return;
+      }
+    }
+
+    // Verify all existing resources have valid URLs before saving
+    for (const res of value.resources ?? []) {
+      const validation = validateResourceUrl(res.url);
+      if (!validation.valid) {
+        setResourceUrlError(validation.error || "One or more resources has an invalid link.");
+        return;
+      }
+    }
+
     setIsSaving(true);
 
     // One Save Changes = one committed map edit (the parent records the history step).
@@ -143,15 +209,100 @@ export function BibbleDetails({ bibble, onClose, onChange, onSave }: BibbleDetai
         <div className="details-section">
           <div className="details-section-title">
             <span className="field-label"><Link2 size={14} /> Resources</span>
-            <button className="text-button"><Plus size={14} /> Add resource</button>
+            {onChange && !isAddingResource && (
+              <button
+                type="button"
+                className="text-button"
+                onClick={handleOpenAddResource}
+              >
+                <Plus size={14} /> Add resource
+              </button>
+            )}
           </div>
-          {(value.resources ?? []).length
-            ? value.resources?.map((resource) => (
-                <a className="resource-link" href={resource.url} key={resource.id} target="_blank" rel="noreferrer">
-                  <BookOpen size={14} />{resource.label}<ExternalLink size={12} />
-                </a>
-              ))
-            : <p className="empty-detail">Keep a favorite reference close by.</p>}
+
+          {isAddingResource && (
+            <div className="resource-add-form">
+              <label className="field-label" htmlFor="new-resource-title">Resource title</label>
+              <input
+                id="new-resource-title"
+                type="text"
+                placeholder="e.g. Official Docs"
+                value={newResourceLabel}
+                onChange={(e) => setNewResourceLabel(e.target.value)}
+              />
+              <label className="field-label" htmlFor="new-resource-url">Resource link (http/https)</label>
+              <input
+                id="new-resource-url"
+                type="text"
+                placeholder="https://example.com"
+                value={newResourceUrl}
+                onChange={(e) => {
+                  setNewResourceUrl(e.target.value);
+                  if (resourceUrlError) setResourceUrlError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSaveResource();
+                  }
+                }}
+              />
+              {resourceUrlError && (
+                <p className="resource-inline-error" role="alert">
+                  {resourceUrlError}
+                </p>
+              )}
+              <div className="resource-add-actions">
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={handleCancelAddResource}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="button-primary button-small"
+                  onClick={handleSaveResource}
+                >
+                  Save resource
+                </button>
+              </div>
+            </div>
+          )}
+
+          {safeResources.length ? (
+            <div className="resource-list">
+              {safeResources.map((resource) => (
+                <div key={resource.id} className="resource-item">
+                  <a
+                    className="resource-link"
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <BookOpen size={14} />
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {resource.label}
+                    </span>
+                    <ExternalLink size={12} />
+                  </a>
+                  {onChange && (
+                    <button
+                      type="button"
+                      className="resource-delete-btn"
+                      onClick={() => handleRemoveResource(resource.id)}
+                      aria-label={`Remove resource ${resource.label}`}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            !isAddingResource && <p className="empty-detail">Keep a favorite reference close by.</p>
+          )}
         </div>
 
         <div className="details-section">

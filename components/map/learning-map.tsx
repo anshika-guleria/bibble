@@ -10,6 +10,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
+import { sanitizeMapResources, sanitizeResources } from "@/lib/resource-url";
 import { saveMapToSupabase } from "@/lib/maps/persistence";
 import { initialSaveState, saveReducer } from "@/lib/maps/save-status";
 import { getMapProgress } from "@/data/sample-maps";
@@ -60,7 +61,7 @@ const cloneNode = (node: Node<BibbleNodeData>): Node<BibbleNodeData> => ({
   data: {
     ...node.data,
     position: { ...node.data.position },
-    resources: node.data.resources?.map((resource) => ({ ...resource })),
+    resources: sanitizeResources(node.data.resources?.map((resource) => ({ ...resource }))),
   } as BibbleNodeData,
 });
 
@@ -126,7 +127,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     loadedMapIdRef.current = initialMap.id;
 
     const savedMap = preferInitialMap ? undefined : storedMaps.find((map) => map.id === initialMap.id);
-    const flow = savedMap ? mapToFlow(savedMap) : initialFlow;
+    const flow = savedMap ? mapToFlow(sanitizeMapResources(savedMap)) : initialFlow;
     const nextNodes = flow.nodes.map(cloneNode);
     const nextEdges = flow.edges.map(cloneEdge);
 

@@ -5,6 +5,7 @@ import { sampleMaps } from "@/data/sample-maps";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { LearningMap } from "@/types/map";
 import { loadMapFromSupabase } from "@/lib/maps/persistence";
+import { sanitizeMapResources } from "@/lib/resource-url";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -36,7 +37,8 @@ export function MapPageClient() {
   }, [hydrated, id, isSampleMap]);
   const remoteMap = remoteResult?.id === id ? remoteResult.map : undefined;
   const remoteLoaded = remoteResult?.id === id;
-  const resolvedMap = remoteLoaded && remoteMap ? remoteMap : map;
+  const rawMap = remoteLoaded && remoteMap ? remoteMap : map;
+  const resolvedMap = rawMap ? sanitizeMapResources(rawMap) : null;
   const remoteLoading = hydrated && !map && remoteResult?.id !== id;
 
   if (!hydrated || (remoteLoading && !resolvedMap)) {

@@ -6,6 +6,7 @@ import { getMapById } from "@/data/sample-maps";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { LearningMap } from "@/types/map";
 import { loadMapFromSupabase } from "@/lib/maps/persistence";
+import { sanitizeMapResources } from "@/lib/resource-url";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -33,7 +34,8 @@ export default function EditMapPage() {
   }, [hydrated, id, sampleMap]);
   const remoteMap = remoteResult?.id === id ? remoteResult.map : undefined;
   const remoteLoaded = remoteResult?.id === id;
-  const map = remoteLoaded && remoteMap ? remoteMap : localMap;
+  const rawMap = remoteLoaded && remoteMap ? remoteMap : localMap;
+  const map = rawMap ? sanitizeMapResources(rawMap) : null;
   const remoteLoading = hydrated && !localMap && remoteResult?.id !== id;
 
   if (!hydrated || (remoteLoading && !map)) {

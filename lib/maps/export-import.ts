@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Bibble, LearningMap, MapEdge, MapResource } from "@/types/map";
 import { createMapId } from "./create-learning-map";
+import { isValidResourceUrl } from "@/lib/resource-url";
 
 export const MAX_MAP_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB
 
@@ -12,7 +13,12 @@ export const mapPositionSchema = z.object({
 export const mapResourceSchema = z.object({
   id: z.string().min(1, "Resource id is required"),
   label: z.string().min(1, "Resource label is required"),
-  url: z.string().min(1, "Resource url is required"),
+  url: z
+    .string()
+    .min(1, "Resource url is required")
+    .refine((val) => isValidResourceUrl(val), {
+      message: "Resource url must be a valid http or https link",
+    }),
 });
 
 export const bibbleStatusSchema = z.enum(["not-started", "learning", "completed"], {
@@ -183,7 +189,11 @@ export function createImportedMap(
       status: bibble.status,
       progress: bibble.progress,
       position: { ...bibble.position },
-      resources: bibble.resources ? bibble.resources.map((r): MapResource => ({ ...r })) : [],
+      resources: bibble.resources
+        ? bibble.resources
+            .filter((r) => isValidResourceUrl(r.url))
+            .map((r): MapResource => ({ ...r, label: r.label.trim(), url: r.url.trim() }))
+        : [],
       notes: bibble.notes,
     })),
     edges: validEdges.map((edge): MapEdge => ({

@@ -1940,6 +1940,17 @@ html.dark .preview-window-line {
 .status-option:hover { border-color: var(--primary); color: var(--foreground); }
 .status-option-active { border-color: var(--primary); background: var(--lavender); color: var(--primary); font-weight: 700; }
 .resource-link { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; background: var(--lavender); color: var(--primary); font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--border); }
+.resource-list { display: flex; flex-direction: column; gap: 6px; }
+.resource-item { display: flex; align-items: center; gap: 6px; }
+.resource-item .resource-link { flex: 1; }
+.resource-delete-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--muted); cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
+.resource-delete-btn:hover { color: var(--danger, #b42318); border-color: var(--danger, #b42318); }
+.resource-add-form { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-top: 4px; }
+.resource-add-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 4px; }
+.resource-inline-error { font-size: 11px; color: var(--danger, #b42318); margin: 2px 0 0; font-weight: 600; }
+.details-panel input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); font-size: 13px; outline: 0; }
+.details-panel input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent); }
+.button-small { padding: 6px 14px; font-size: 12px; }
 .empty-detail { font-size: 12px; color: var(--muted); font-style: italic; margin: 2px 0; }
 .text-button { border: 0; background: transparent; color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .details-progress { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
