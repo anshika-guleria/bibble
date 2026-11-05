@@ -76,9 +76,36 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
     timerAlerts.notify("Focus session finished", `Nice work, your ${room.minutes}-min session in ${room.name} is done.`);
   }, [handleSessionComplete, timerAlerts, room]);
 
-  const { active, seconds, formattedTime, toggleTimer, resetTimer, completeTimer, isCompleted } = useFocusTimer(
+  const handleBreakFinished = useCallback(() => {
+    triggerToast("☕ Break finished! Ready to focus again?");
+    timerAlerts.notify("Break finished", `Break time is over in ${room.name}. Ready to focus again?`);
+  }, [room.name, timerAlerts, triggerToast]);
+
+  const [preferredBreakMinutes, setPreferredBreakMinutes] = useLocalStorage<number>(
+    "bibble-preferred-break-length",
+    5
+  );
+
+  const {
+    active,
+    seconds,
+    formattedTime,
+    toggleTimer,
+    resetTimer,
+    completeTimer,
+    isCompleted,
+    mode,
+    breakMinutes,
+    setBreakMinutes,
+    startBreak,
+    skipBreak,
+    resetBreak,
+    startFocusSession,
+  } = useFocusTimer(
     room.minutes,
-    handleTimerFinished
+    handleTimerFinished,
+    handleBreakFinished,
+    preferredBreakMinutes
   );
 
   const handleAlertsToggle = async () => {
@@ -91,15 +118,15 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
 
   // Nothing to log until the clock has moved, and nothing to complete once the run is done.
   const elapsedSeconds = room.minutes * 60 - seconds;
-  const canCompleteEarly = !isCompleted && elapsedSeconds > 0;
+  const canCompleteEarly = mode === "focus" && !isCompleted && elapsedSeconds > 0;
 
   const handleTimerToggle = () => {
-    if (isCompleted) runIdRef.current += 1;
+    if (isCompleted || mode === "break") runIdRef.current += 1;
     toggleTimer();
   };
 
   const handleTimerReset = () => {
-    runIdRef.current += 1;
+    if (mode === "focus") runIdRef.current += 1;
     resetTimer();
   };
 
@@ -109,6 +136,39 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
     handleSessionComplete(Math.max(1, Math.floor(elapsedSeconds / 60)));
     completeTimer();
   };
+
+  const handleSelectBreakMinutes = useCallback(
+    (mins: number) => {
+      setPreferredBreakMinutes(mins);
+      setBreakMinutes(mins as 5 | 10 | 15);
+    },
+    [setBreakMinutes, setPreferredBreakMinutes]
+  );
+
+  const handleStartBreak = useCallback(
+    (mins: number) => {
+      setPreferredBreakMinutes(mins);
+      startBreak(mins);
+      triggerToast(`☕ Starting a ${mins}-min break. Rest up!`);
+    },
+    [setPreferredBreakMinutes, startBreak, triggerToast]
+  );
+
+  const handleSkipBreak = useCallback(() => {
+    skipBreak();
+    triggerToast("Break skipped. Ready to focus! 🍵");
+  }, [skipBreak, triggerToast]);
+
+  const handleResetBreak = useCallback(() => {
+    resetBreak();
+    triggerToast("Break timer reset");
+  }, [resetBreak, triggerToast]);
+
+  const handleStartNewSession = useCallback(() => {
+    runIdRef.current += 1;
+    startFocusSession();
+    triggerToast(`✨ Starting a fresh ${room.minutes}-min focus session in ${room.name}!`);
+  }, [room.minutes, room.name, startFocusSession, triggerToast]);
 
   const petCat = () => {
     setCatHearts((prev) => prev + 1);
@@ -221,7 +281,8 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
 
           {/* Shared Focus Timer Panel */}
           <FocusTimerPanel
-            minutes={room.minutes}
+            mode={mode}
+            minutes={mode === "break" ? breakMinutes : room.minutes}
             formattedTime={formattedTime}
             active={active}
             onToggleActive={handleTimerToggle}
@@ -229,6 +290,12 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
             completeDisabled={!canCompleteEarly}
             onReset={handleTimerReset}
             isCompleted={isCompleted}
+            breakMinutes={breakMinutes}
+            onSelectBreakMinutes={handleSelectBreakMinutes}
+            onStartBreak={handleStartBreak}
+            onSkipBreak={handleSkipBreak}
+            onResetBreak={handleResetBreak}
+            onStartNewSession={handleStartNewSession}
             notifications={{
               enabled: timerAlerts.enabled,
               permission: timerAlerts.permission,
