@@ -1,5 +1,19 @@
 "use client";
 
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import {
+  DEFAULT_MUTED,
+  DEFAULT_SOUNDSCAPE,
+  DEFAULT_VOLUME,
+  STORAGE_KEY_MUTED,
+  STORAGE_KEY_MUTED_ALT,
+  STORAGE_KEY_SOUND_ALT,
+  STORAGE_KEY_SOUNDSCAPE,
+  STORAGE_KEY_VOLUME,
+  normalizeMuted,
+  normalizeSoundscape,
+  normalizeVolume,
+} from "@/lib/audio/ambient-storage";
 import { synthesizeSoundscape, type SoundInstance, type Soundscape } from "@/lib/audio/sound-synth";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,13 +33,28 @@ function volumeToGain(volume: number): number {
 
 export function useAmbientAudio({
   onSoundscapeChange,
-  defaultSound = "rain",
-  defaultVolume = 0.6,
+  defaultSound = DEFAULT_SOUNDSCAPE,
+  defaultVolume = DEFAULT_VOLUME,
 }: UseAmbientAudioProps = {}) {
-  const [sound, setSound] = useState<Soundscape>(defaultSound);
+  const [storedSound, setStoredSound, soundHydrated] = useLocalStorage<unknown>(
+    STORAGE_KEY_SOUNDSCAPE,
+    defaultSound
+  );
+  const [storedVolume, setStoredVolume] = useLocalStorage<unknown>(
+    STORAGE_KEY_VOLUME,
+    defaultVolume
+  );
+  const [storedMuted, setStoredMuted, mutedHydrated] = useLocalStorage<unknown>(
+    STORAGE_KEY_MUTED,
+    DEFAULT_MUTED
+  );
+
+  const sound = normalizeSoundscape(storedSound, defaultSound);
+  const volume = normalizeVolume(storedVolume, defaultVolume);
+  const isMuted = normalizeMuted(storedMuted, DEFAULT_MUTED);
+
+  // Playback state is strictly local and never persisted or autoplayed.
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(defaultVolume);
-  const [isMuted, setIsMuted] = useState(false);
 
   const contextRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -35,6 +64,25 @@ export function useAmbientAudio({
   const wantsPlaybackRef = useRef(false);
   const volumeRef = useRef(volume);
   const mutedRef = useRef(isMuted);
+
+  // Keep alt keys in sync for compatibility
+  useEffect(() => {
+    if (typeof window === "undefined" || !soundHydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY_SOUND_ALT, JSON.stringify(sound));
+    } catch {
+      // Ignore
+    }
+  }, [sound, soundHydrated]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !mutedHydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY_MUTED_ALT, JSON.stringify(isMuted));
+    } catch {
+      // Ignore
+    }
+  }, [isMuted, mutedHydrated]);
 
   const ensureGraph = (): { context: AudioContext; master: GainNode } => {
     let context = contextRef.current;
@@ -160,8 +208,8 @@ export function useAmbientAudio({
       cancelPendingStart();
       stopCurrentSound(PAUSE_FADE_SECONDS);
     } else {
-      const targetSound = sound === "off" ? "rain" : sound;
-      if (sound === "off") setSound("rain");
+      const targetSound = sound === "off" ? DEFAULT_SOUNDSCAPE : sound;
+      if (sound === "off") setStoredSound(DEFAULT_SOUNDSCAPE);
       wantsPlaybackRef.current = true;
       setIsPlaying(true);
       startSound(targetSound);
@@ -169,16 +217,17 @@ export function useAmbientAudio({
   };
 
   const chooseSound = (next: Soundscape) => {
-    if (next === "off") {
+    const target = normalizeSoundscape(next, defaultSound);
+    if (target === "off") {
       wantsPlaybackRef.current = false;
-      setSound("off");
+      setStoredSound("off");
       setIsPlaying(false);
       cancelPendingStart();
       stopCurrentSound(PAUSE_FADE_SECONDS);
       return;
     }
 
-    if (sound === next && isPlaying) {
+    if (sound === target && isPlaying) {
       wantsPlaybackRef.current = false;
       setIsPlaying(false);
       cancelPendingStart();
@@ -187,20 +236,21 @@ export function useAmbientAudio({
     }
 
     wantsPlaybackRef.current = true;
-    setSound(next);
+    setStoredSound(target);
     setIsPlaying(true);
-    startSound(next);
+    startSound(target);
   };
 
   const handleVolumeChange = (newVol: number) => {
-    setVolume(newVol);
-    if (isMuted && newVol > 0) {
-      setIsMuted(false);
+    const validVol = normalizeVolume(newVol, defaultVolume);
+    setStoredVolume(validVol);
+    if (isMuted && validVol > 0) {
+      setStoredMuted(false);
     }
   };
 
   const toggleMute = () => {
-    setIsMuted((prev) => !prev);
+    setStoredMuted(!isMuted);
   };
 
   return {

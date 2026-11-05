@@ -5,12 +5,26 @@ import type { Soundscape } from "@/lib/audio/sound-synth";
 import { CloudRain, Coffee, Music2, Pause, Play, Volume1, Volume2, VolumeX, Wind, Gamepad2, Leaf } from "lucide-react";
 
 export type { Soundscape };
+export {
+  STORAGE_KEY_SOUNDSCAPE,
+  STORAGE_KEY_VOLUME,
+  STORAGE_KEY_MUTED,
+  DEFAULT_SOUNDSCAPE,
+  DEFAULT_VOLUME,
+  DEFAULT_MUTED,
+} from "@/lib/audio/ambient-storage";
 
 interface AmbientSoundProps {
   onSoundscapeChange?: (sound: Soundscape) => void;
+  defaultSound?: Soundscape;
+  defaultVolume?: number;
 }
 
-export function AmbientSound({ onSoundscapeChange }: AmbientSoundProps) {
+export function AmbientSound({
+  onSoundscapeChange,
+  defaultSound,
+  defaultVolume,
+}: AmbientSoundProps) {
   const {
     sound,
     isPlaying,
@@ -20,7 +34,7 @@ export function AmbientSound({ onSoundscapeChange }: AmbientSoundProps) {
     chooseSound,
     handleVolumeChange,
     toggleMute,
-  } = useAmbientAudio({ onSoundscapeChange });
+  } = useAmbientAudio({ onSoundscapeChange, defaultSound, defaultVolume });
 
   const options: Array<{ id: Soundscape; label: string; icon: typeof Wind }> = [
     { id: "rain", label: "Rain", icon: CloudRain },
