@@ -12,6 +12,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useTheme } from "@/hooks/use-theme";
 import type { StudyRoom } from "@/types/room";
 import { recordFocusSession } from "@/lib/progress";
+import { isRoomFull } from "@/lib/room-capacity";
 import { ArrowLeft, Bell, BellOff, BookOpen, Headphones, Sparkles, Users } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
@@ -245,6 +246,7 @@ export function StudyRoomShell({ room }: { room: StudyRoom }) {
           noteInput={note}
           initialPeople={initialPeople}
           onToggleJoin={() => {
+            if (!joined && isRoomFull(room)) return; // full rooms cannot be joined
             const nextJoined = !joined;
             setJoined(nextJoined);
             triggerToast(nextJoined ? "You joined the table! 🍵" : "You stepped away.");
