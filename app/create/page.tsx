@@ -15,13 +15,14 @@ import {
 } from "@/lib/maps/export-import";
 import type { LearningMap } from "@/types/map";
 import { saveMapToSupabase } from "@/lib/maps/persistence";
+import { STORAGE_KEY_MAPS } from "@/lib/progress";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import styles from "./create-page.module.css";
 
 export default function CreatePage() {
   const router = useRouter();
-  const [storedMaps, setMaps] = useLocalStorage<LearningMap[]>("bibble-maps", []);
+  const [storedMaps, setMaps] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
   const [values, setValues] = useState<CreateLearningMapInput>({
     title: "",
     description: "",

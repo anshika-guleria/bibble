@@ -13,20 +13,22 @@ import {
   formatMinutes,
   loadSessionsFromStorage,
   recordFocusSession as recordSessionLib,
+  STORAGE_KEY_DELETED_MAPS,
   STORAGE_KEY_MAPS,
 } from "@/lib/progress";
 
 export function useStudyStats() {
   const [sessions, setSessions] = useState<FocusSession[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-  const [storedMaps] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
+  const [sessionsHydrated, setSessionsHydrated] = useState(false);
+  const [storedMaps, , storedHydrated] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
+  const [deletedMapIds, , deletedHydrated] = useLocalStorage<string[]>(STORAGE_KEY_DELETED_MAPS, []);
 
   // Hydrate sessions from localStorage on mount
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const loaded = loadSessionsFromStorage();
       setSessions(loaded);
-      setHydrated(true);
+      setSessionsHydrated(true);
     }, 0);
 
     const handleSessionRecorded = (e: Event) => {
@@ -56,10 +58,10 @@ export function useStudyStats() {
   const formattedDuration = useMemo(() => formatMinutes(totalMinutes), [totalMinutes]);
   const streak = useMemo<DailyStreakInfo>(() => calculateStreak(sessions), [sessions]);
 
-  // Compute map progress items combining sample maps with storedMaps
+  // Compute map progress items combining sample maps with storedMaps, excluding deleted maps
   const mapItems = useMemo<MapProgressItem[]>(() => {
-    return computeMapProgressItems(storedMaps);
-  }, [storedMaps]);
+    return computeMapProgressItems(storedMaps, deletedMapIds);
+  }, [storedMaps, deletedMapIds]);
 
   const mapOverview = useMemo(() => {
     const totalMaps = mapItems.length;
@@ -84,8 +86,11 @@ export function useStudyStats() {
   }, [mapItems]);
 
   const personalMapCount = useMemo(
-    () => storedMaps.filter((map) => !sampleMaps.some((sample) => sample.id === map.id)).length,
-    [storedMaps]
+    () =>
+      storedMaps.filter(
+        (map) => !deletedMapIds.includes(map.id) && !sampleMaps.some((sample) => sample.id === map.id)
+      ).length,
+    [storedMaps, deletedMapIds]
   );
 
   const recordSession = useCallback(
@@ -118,7 +123,7 @@ export function useStudyStats() {
     mapItems,
     mapOverview,
     personalMapCount,
-    hydrated,
+    hydrated: sessionsHydrated && storedHydrated && deletedHydrated,
     recordSession,
     resetStats,
   };

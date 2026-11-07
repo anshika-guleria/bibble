@@ -4,6 +4,7 @@ import { getMapProgress, sampleMaps } from "@/data/sample-maps";
 
 export const STORAGE_KEY_SESSIONS = "bibble-focus-sessions";
 export const STORAGE_KEY_MAPS = "bibble-maps";
+export const STORAGE_KEY_DELETED_MAPS = "bibble-deleted-maps";
 
 /**
  * Returns today's date formatted as YYYY-MM-DD in local timezone.
@@ -215,21 +216,52 @@ export function clearFocusSessions(): void {
 }
 
 /**
- * Computes per-map progress statistics merging sample maps and custom/stored maps.
+ * Merges built-in sample maps, locally stored maps, and remote maps,
+ * filtering out any maps whose ID appears in deletedMapIds.
+ *
+ * Stored maps override matching sample maps.
+ * Remote maps take precedence if present.
+ * System maps and user maps in deletedMapIds are omitted entirely.
  */
-export function computeMapProgressItems(storedMaps: LearningMap[] = []): MapProgressItem[] {
-  // Merge sample maps with any overrides in storedMaps
-  const mergedMapList = sampleMaps.map((sample) => {
-    const saved = storedMaps.find((m) => m.id === sample.id);
-    return saved ?? sample;
-  });
+export function mergeMaps(
+  storedMaps: LearningMap[] = [],
+  deletedMapIds: string[] = [],
+  remoteMaps: LearningMap[] = []
+): LearningMap[] {
+  const merged = sampleMaps
+    .filter((sample) => !deletedMapIds.includes(sample.id))
+    .map((sample) => {
+      const saved = storedMaps.find((m) => m.id === sample.id);
+      return saved ?? sample;
+    });
 
-  // Also include any user-created custom maps that aren't sample maps
   for (const stored of storedMaps) {
-    if (!sampleMaps.some((s) => s.id === stored.id)) {
-      mergedMapList.push(stored);
+    if (deletedMapIds.includes(stored.id)) continue;
+    if (!merged.some((m) => m.id === stored.id)) {
+      merged.push(stored);
     }
   }
+
+  for (const remote of remoteMaps) {
+    if (deletedMapIds.includes(remote.id)) continue;
+    const existingIndex = merged.findIndex((map) => map.id === remote.id);
+    if (existingIndex >= 0) merged[existingIndex] = remote;
+    else merged.push(remote);
+  }
+
+  return merged;
+}
+
+/**
+ * Computes per-map progress statistics merging sample maps and custom/stored maps,
+ * excluding any maps present in deletedMapIds.
+ */
+export function computeMapProgressItems(
+  storedMaps: LearningMap[] = [],
+  deletedMapIds: string[] = [],
+  remoteMaps: LearningMap[] = []
+): MapProgressItem[] {
+  const mergedMapList = mergeMaps(storedMaps, deletedMapIds, remoteMaps);
 
   return mergedMapList.map((map) => {
     const progress = getMapProgress(map);

@@ -12,6 +12,7 @@ import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
 import { saveMapToSupabase } from "@/lib/maps/persistence";
 import { initialSaveState, saveReducer } from "@/lib/maps/save-status";
+import { STORAGE_KEY_MAPS } from "@/lib/progress";
 import { getMapProgress } from "@/data/sample-maps";
 import type { Bibble, BibbleNodeData, LearningMap } from "@/types/map";
 import {
@@ -100,7 +101,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   const [canRedo, setCanRedo] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [storedMaps, setStoredMaps, hydrated] = useLocalStorage<LearningMap[]>("bibble-maps", []);
+  const [storedMaps, setStoredMaps, hydrated] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
   const flowRef = useRef<ReactFlowInstance<Node<BibbleNodeData>, Edge> | null>(null);
   const historyRef = useRef<EditHistory | null>(null);
   const loadedMapIdRef = useRef<string | null>(null);

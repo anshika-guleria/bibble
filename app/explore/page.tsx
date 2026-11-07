@@ -7,6 +7,7 @@ import { sampleMaps } from "@/data/sample-maps";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { LearningMap } from "@/types/map";
 import { deleteMapFromSupabase, listMapsFromSupabase } from "@/lib/maps/persistence";
+import { mergeMaps, STORAGE_KEY_DELETED_MAPS, STORAGE_KEY_MAPS } from "@/lib/progress";
 import { Search, SlidersHorizontal, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -14,8 +15,8 @@ export default function ExplorePage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All maps");
   // Read user-saved/custom maps and the IDs of system maps the user removed.
-  const [storedMaps, setStoredMaps] = useLocalStorage<LearningMap[]>("bibble-maps", []);
-  const [deletedMapIds, setDeletedMapIds] = useLocalStorage<string[]>("bibble-deleted-maps", []);
+  const [storedMaps, setStoredMaps] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
+  const [deletedMapIds, setDeletedMapIds] = useLocalStorage<string[]>(STORAGE_KEY_DELETED_MAPS, []);
   const [remoteMaps, setRemoteMaps] = useState<LearningMap[]>([]);
   useEffect(() => {
     listMapsFromSupabase().then(setRemoteMaps).catch(() => setRemoteMaps([]));
@@ -24,25 +25,7 @@ export default function ExplorePage() {
   // Merge: stored maps override matching sample maps, user-created maps are appended,
   // and system maps the user deleted are left out entirely (even if an override exists).
   const allMaps = useMemo(() => {
-    const merged = sampleMaps
-      .filter((sample) => !deletedMapIds.includes(sample.id))
-      .map((sample) => {
-        const saved = storedMaps.find((m) => m.id === sample.id);
-        return saved ?? sample;
-      });
-    for (const stored of storedMaps) {
-      if (deletedMapIds.includes(stored.id)) continue;
-      if (!merged.some((m) => m.id === stored.id)) {
-        merged.push(stored);
-      }
-    }
-    for (const remote of remoteMaps) {
-      if (deletedMapIds.includes(remote.id)) continue;
-      const existingIndex = merged.findIndex((map) => map.id === remote.id);
-      if (existingIndex >= 0) merged[existingIndex] = remote;
-      else merged.push(remote);
-    }
-    return merged;
+    return mergeMaps(storedMaps, deletedMapIds, remoteMaps);
   }, [storedMaps, deletedMapIds, remoteMaps]);
 
   const maps = useMemo(
