@@ -1,5 +1,6 @@
 "use client";
 
+import { isRoomFull, ROOM_FULL_MESSAGE } from "@/lib/room-capacity";
 import type { StudyRoom } from "@/types/room";
 import { ArrowUpRight, BookOpen, Clock3, Headphones, Sparkles, Users, Zap } from "lucide-react";
 
@@ -18,6 +19,8 @@ interface StudyRoomCardProps {
 
 export function StudyRoomCard({ room, onEnter }: StudyRoomCardProps) {
   const MoodIcon = moodIcons[room.mood as keyof typeof moodIcons] || Headphones;
+  const full = isRoomFull(room);
+  const fullNoteId = `room-full-${room.id}`;
 
   return (
     <article className={`room-card room-card-${room.color}`}>
@@ -26,8 +29,8 @@ export function StudyRoomCard({ room, onEnter }: StudyRoomCardProps) {
           <span className="room-mood">
             <MoodIcon size={13} /> {room.mood}
           </span>
-          <span className="room-seat-count">
-            <Users size={13} /> {room.participants}/{room.capacity} seats
+          <span className={`room-seat-count ${full ? "room-seat-count-full" : ""}`}>
+            <Users size={13} /> {full ? "Full" : `${room.participants}/${room.capacity} seats`}
           </span>
         </div>
         <div>
@@ -40,15 +43,18 @@ export function StudyRoomCard({ room, onEnter }: StudyRoomCardProps) {
             <span key={tag} className="room-tag-pill">{tag}</span>
           ))}
         </div>
+        {full && <p className="room-full-note" id={fullNoteId}>{ROOM_FULL_MESSAGE}</p>}
         <button
           type="button"
           className="room-join-btn"
           onClick={(event) => onEnter(room, event.currentTarget)}
-          aria-haspopup="dialog"
-          aria-label={`Enter ${room.name} study room`}
+          disabled={full}
+          aria-describedby={full ? fullNoteId : undefined}
+          aria-haspopup={full ? undefined : "dialog"}
+          aria-label={full ? `${room.name} study room is full` : `Enter ${room.name} study room`}
         >
-          <span>Enter study room</span>
-          <ArrowUpRight size={16} aria-hidden="true" />
+          <span>{full ? "Room full" : "Enter study room"}</span>
+          {!full && <ArrowUpRight size={16} aria-hidden="true" />}
         </button>
       </div>
 

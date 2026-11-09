@@ -1,5 +1,6 @@
 "use client";
 
+import { isRoomFull, ROOM_FULL_MESSAGE } from "@/lib/room-capacity";
 import type { StudyRoom } from "@/types/room";
 import { Check, MessageCircle, Send, Sparkles, Users } from "lucide-react";
 
@@ -24,6 +25,8 @@ export function StudyRoomSidebar({
   onNoteInputChange,
   onAddNote,
 }: StudyRoomSidebarProps) {
+    // Someone already seated can always leave; only new joins are blocked.
+    const blocked = isRoomFull(room) && !joined;
   return (
     <aside className="room-sidebar">
       <div className="room-side-section">
@@ -50,13 +53,20 @@ export function StudyRoomSidebar({
             </div>
           )}
         </div>
+                {blocked && <p className="room-full-note" id="room-full-note">{ROOM_FULL_MESSAGE}</p>}
         <button
           className={`join-room-button ${joined ? "joined-room" : ""}`}
           onClick={onToggleJoin}
+          disabled={blocked}
+          aria-describedby={blocked ? "room-full-note" : undefined}
         >
           {joined ? (
             <>
               <Check size={16} /> You are in the room
+            </>
+          ) : blocked ? (
+            <>
+              <Users size={16} /> Room full
             </>
           ) : (
             <>
