@@ -4,6 +4,11 @@ import { initialSaveState, saveReducer, type SaveEvent, type SaveState } from ".
 const run = (events: SaveEvent[], from: SaveState = initialSaveState) => events.reduce(saveReducer, from);
 
 describe("save status", () => {
+  it("keeps saving paused after a conflict until explicitly resolved", () => {
+    const state = run([{ type: "edit" }, { type: "save-start" }, { type: "save-conflict", version: 1 }, { type: "edit" }]);
+    expect(state.status).toBe("conflict");
+    expect(saveReducer(state, { type: "reload" }).status).toBe("saved");
+  });
   it("starts saved", () => {
     expect(initialSaveState.status).toBe("saved");
   });

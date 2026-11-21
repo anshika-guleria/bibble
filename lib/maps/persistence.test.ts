@@ -81,22 +81,16 @@ describe("atomic Supabase persistence", () => {
   });
 
   describe("saveMapToSupabase", () => {
-    it("returns true early if Supabase is unconfigured", async () => {
-      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const result = await saveMapToSupabase(mockMap);
-      expect(result).toBe(true);
-      expect(mockSupabase.rpc).not.toHaveBeenCalled();
-    });
-
-    it("executes atomic RPC procedure as primary path", async () => {
-      mockSupabase.rpc.mockResolvedValue({ data: true, error: null });
+    it("executes the atomic versioned RPC as primary path", async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: 1, error: null });
 
       const success = await saveMapToSupabase(mockMap);
       expect(success).toBe(true);
-      expect(mockSupabase.rpc).toHaveBeenCalledWith("save_learning_map_atomic", expect.objectContaining({
+      expect(mockSupabase.rpc).toHaveBeenCalledWith("save_learning_map_versioned", expect.objectContaining({
         p_map: expect.objectContaining({ id: "map-1" }),
         p_bibbles: expect.arrayContaining([expect.objectContaining({ id: "b-1" })]),
         p_edges: expect.arrayContaining([expect.objectContaining({ id: "e-1" })]),
+        p_expected_version: null,
       }));
     });
 
@@ -107,13 +101,13 @@ describe("atomic Supabase persistence", () => {
 
       const success = await saveMapToSupabase(mockMap);
       expect(success).toBe(false);
-      // Fallback table operations should NOT be called when RPC fails with standard constraint error
+      // Constraint failures must never fall back to separate table writes.
       expect(mockSupabase.from).not.toHaveBeenCalled();
     });
 
     it("fails closed when the atomic migration is not deployed", async () => {
       mockSupabase.rpc.mockResolvedValue({
-        error: { code: "PGRST202", message: "Could not find the function save_learning_map_atomic" },
+        error: { code: "PGRST202", message: "Could not find the function save_learning_map_versioned" },
       });
 
       const success = await saveMapToSupabase(mockMap);

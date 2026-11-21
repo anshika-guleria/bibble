@@ -10,7 +10,9 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
-import { saveMapToSupabase } from "@/lib/maps/persistence";
+import { loadLatestMap, saveMapWithVersion } from "@/lib/maps/persistence";
+import { cloneMapForConflict } from "@/lib/maps/concurrency";
+import { MapConflictDialog } from "@/components/map/map-conflict-dialog";
 import { initialSaveState, saveReducer } from "@/lib/maps/save-status";
 import { getMapProgress } from "@/data/sample-maps";
 import type { Bibble, BibbleNodeData, LearningMap } from "@/types/map";
@@ -33,6 +35,7 @@ import {
 import { ArrowLeft, Star, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   annotateNodesWithReadiness,
@@ -94,6 +97,15 @@ const createHistory = (nodes: Node<BibbleNodeData>[], edges: Edge[]): EditHistor
 });
 
 export function LearningMapCanvas({ initialMap, editable = false, preferInitialMap = false }: { initialMap: LearningMap; editable?: boolean; preferInitialMap?: boolean }) {
+  const router = useRouter();
+  const resolutionRef = useRef(false);
+  const [mapBase, setMapBase] = useState(initialMap);
+  const revisionRef = useRef(initialMap.version);
+  const inFlightRef = useRef(false);
+  const conflictRef = useRef(false);
+  const [conflict, setConflict] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [conflictError, setConflictError] = useState<string | null>(null);
   const initialFlow = useMemo(() => mapToFlow(initialMap), [initialMap]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BibbleNodeData>>(initialFlow.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlow.edges);
@@ -152,6 +164,9 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     loadedMapIdRef.current = initialMap.id;
 
     const savedMap = preferInitialMap ? undefined : storedMaps.find((map) => map.id === initialMap.id);
+    const baseline = savedMap ?? initialMap;
+    revisionRef.current = baseline.version ?? (savedMap ? 1 : undefined);
+    setMapBase(baseline);
     const flow = savedMap ? mapToFlow(savedMap) : initialFlow;
     const nextNodes = flow.nodes.map(cloneNode);
     const nextEdges = flow.edges.map(cloneEdge);
@@ -162,7 +177,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     setEdges(nextEdges);
 
     if (editable) historyRef.current = createHistory(nextNodes, nextEdges);
-  }, [editable, hydrated, initialFlow, initialMap.id, preferInitialMap, setEdges, setNodes, storedMaps]);
+  }, [editable, hydrated, initialFlow, initialMap, initialMap.id, preferInitialMap, setEdges, setNodes, storedMaps]);
 
   /** Append a snapshot unless it matches the current history entry. */
   const recordHistory = useCallback(
@@ -236,6 +251,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     if (!editable) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (conflictRef.current) return;
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
 
       const target = event.target as HTMLElement | null;
@@ -310,32 +326,101 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     recordHistory(reannotatedNodes, edgesRef.current);
   };
 
-  /**
-   * Persist the map to localStorage.
-   * Accepts an optional `updatedBibble` so the save can include a just-edited
-   * bibble before React flushes the setNodes() call (avoids stale-state race).
-   */
+  const persistSnapshot = useCallback(async (next: LearningMap) => {
+    if (inFlightRef.current) return false;
+    inFlightRef.current = true;
+    setSaveError(null);
+    const version = saveVersionRef.current;
+    dispatchSave({ type: "save-start" });
+    // Per-tab recovery draft never replaces another tab's shared cache.
+    try { window.sessionStorage.setItem(`bibble-map-draft:${next.id}`, JSON.stringify(next)); } catch { /* Canvas remains available if storage is full. */ }
+    try {
+      const result = await saveMapWithVersion(next);
+      if (result.status === "conflict") {
+        conflictRef.current = true;
+        setConflict(true);
+        dispatchSave({ type: "save-conflict", version });
+        return false;
+      }
+      if (result.status === "error") {
+        dispatchSave({ type: "save-failure", version });
+        setSaveError(result.message);
+        return false;
+      }
+      revisionRef.current = result.map.version;
+      setMapBase(result.map);
+      if (result.storage === "cloud") {
+        try { setStoredMaps((current) => [...current.filter((m) => m.id !== next.id), result.map]); }
+        catch { setSaveError("Saved to your account. This browser could not update its offline cache."); }
+      }
+      conflictRef.current = false;
+      setConflict(false);
+      dispatchSave({ type: "save-success", version });
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 1800);
+      return true;
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [setStoredMaps]);
+
   const saveMap = useCallback(async (updatedBibble?: Bibble) => {
-    // Build node list with the updated bibble merged in (if provided)
+    if (conflictRef.current || inFlightRef.current) return false;
     const currentNodes = updatedBibble
       ? nodesRef.current.map((n) => n.id === updatedBibble.id ? { ...n, data: updatedBibble as BibbleNodeData } : n)
       : nodesRef.current;
-    const next = flowToMap(initialMap, currentNodes, edgesRef.current);
-    setStoredMaps((current) => [...current.filter((m) => m.id !== next.id), next]);
-    setSaveError(null);
-    // Edits already dispatched are covered by this save; later ones keep the map unsaved.
-    const version = saveVersionRef.current;
-    dispatchSave({ type: "save-start" });
-    const persisted = await saveMapToSupabase(next);
-    if (!persisted) {
-      dispatchSave({ type: "save-failure", version });
-      setSaveError("Your local changes are saved, but Supabase could not be updated. Please try again.");
-      return;
+    const next = { ...flowToMap(mapBase, currentNodes, edgesRef.current), version: revisionRef.current };
+    return persistSnapshot(next);
+  }, [mapBase, persistSnapshot]);
+
+  const resolveConflict = async (action: "reload" | "copy" | "overwrite") => {
+    if (inFlightRef.current || resolutionRef.current) return;
+    resolutionRef.current = true;
+    setResolving(true);
+    setConflictError(null);
+    try {
+      const local = { ...flowToMap(mapBase, nodesRef.current, edgesRef.current), version: revisionRef.current };
+      if (action === "copy") {
+        const result = await saveMapWithVersion(cloneMapForConflict(local));
+        if (result.status !== "saved") throw new Error("Could not save a copy. Your current changes are still here.");
+        if (result.storage === "cloud") {
+          try { setStoredMaps((current) => [...current, result.map]); }
+          catch { /* The cloud copy is safe; its route can load it directly. */ }
+        }
+        // Navigate only after the new graph is safely saved.
+        router.push(`/map/${encodeURIComponent(result.map.id)}/edit`);
+        return;
+      }
+      const latest = await loadLatestMap(mapBase.id);
+      if (!latest) throw new Error("Could not load the latest version. Your current changes are still here.");
+      if (action === "overwrite") {
+        // This remains a compare-and-swap: a third writer can cause another conflict.
+        const saved = await persistSnapshot({ ...local, version: latest.version });
+        if (!saved) setConflictError("The latest version could not be replaced. Retry or save a copy.");
+        return;
+      }
+      const flow = mapToFlow(latest);
+      nodesRef.current = flow.nodes;
+      edgesRef.current = flow.edges;
+      setNodes(flow.nodes);
+      setEdges(flow.edges);
+      revisionRef.current = latest.version;
+      setMapBase(latest);
+      if (editable) historyRef.current = createHistory(flow.nodes, flow.edges);
+      setCanUndo(false);
+      setCanRedo(false);
+      setSelectedId(null);
+      conflictRef.current = false;
+      setConflict(false);
+      setSaveError(null);
+      dispatchSave({ type: "reload" });
+    } catch (error) {
+      setConflictError(error instanceof Error ? error.message : "Could not resolve this conflict. Please retry.");
+    } finally {
+      resolutionRef.current = false;
+      setResolving(false);
     }
-    dispatchSave({ type: "save-success", version });
-    setJustSaved(true);
-    window.setTimeout(() => setJustSaved(false), 1800);
-  }, [initialMap, setStoredMaps]);
+  };
 
   const addBibble = () => {
     const id = `bibble-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -441,6 +526,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   useEffect(() => {
     if (!editable) return;
     function handleKeyDown(event: KeyboardEvent) {
+      if (conflictRef.current) return;
       if (event.defaultPrevented || event.repeat || isEditableTarget(event.target as HTMLElement | null)) return;
       const action = getShortcutAction(event);
       if (!action) return;
@@ -454,11 +540,12 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
 
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
 
-  const currentMap = flowToMap(initialMap, nodes, edges);
+  const currentMap = flowToMap(mapBase, nodes, edges);
   const progress = getMapProgress(currentMap);
 
   return (
-     <main className={`map-page ${editable ? "learning-map-editor" : ""}`}>
+     <>
+     <main inert={conflict} className={`map-page ${editable ? "learning-map-editor" : ""}`}>
        {!editable && <MapHeader map={currentMap} onSave={() => saveMap()} saved={justSaved} />}
        {!editable && (
          <div className="map-page-copy">
@@ -549,5 +636,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     {editable && <div className="editor-back-link"><ArrowLeft size={15} /> <span>Changes are kept on this device</span></div>}
   </div>
 </main>
+{conflict && <MapConflictDialog busy={resolving} error={conflictError ?? saveError} onResolve={(action) => { void resolveConflict(action); }} />}
+</>
 );
 }

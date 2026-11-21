@@ -1,0 +1,4 @@
+PASS: simultaneous PostgreSQL writers serialize on the map row
+PASS: stale waiting writer receives CONCURRENCY_CONFLICT
+PASS: winning revision 2 and completed node remain intact
+Stopped private test cluster; temporary inspection files were retained.

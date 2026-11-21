@@ -1,4 +1,4 @@
-export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
+export type SaveStatus = "saved" | "unsaved" | "saving" | "error" | "conflict";
 
 export type SaveState = {
   status: SaveStatus;
@@ -12,7 +12,9 @@ export type SaveEvent =
   | { type: "edit" }
   | { type: "save-start" }
   | { type: "save-success"; version: number }
-  | { type: "save-failure"; version: number };
+  | { type: "save-failure"; version: number }
+  | { type: "save-conflict"; version: number }
+  | { type: "reload" };
 
 export const initialSaveState: SaveState = { status: "saved", version: 0, savingVersion: null };
 
@@ -24,8 +26,13 @@ export function saveReducer(state: SaveState, event: SaveEvent): SaveState {
   switch (event.type) {
     case "edit": {
       const version = state.version + 1;
-      return { ...state, version, status: state.status === "saving" ? "saving" : "unsaved" };
+      return { ...state, version, status: state.status === "saving" ? "saving" : state.status === "conflict" ? "conflict" : "unsaved" };
     }
+    case "reload":
+      return { ...state, status: "saved", savingVersion: null };
+    case "save-conflict":
+      if (state.savingVersion !== event.version) return state;
+      return { ...state, status: "conflict", savingVersion: null };
     case "save-start":
       return { ...state, status: "saving", savingVersion: state.version };
     case "save-success": {
@@ -45,4 +52,5 @@ export const saveStatusLabel: Record<SaveStatus, string> = {
   unsaved: "Unsaved changes",
   saving: "Saving…",
   error: "Couldn't save. Try again",
+  conflict: "A newer version is available",
 };

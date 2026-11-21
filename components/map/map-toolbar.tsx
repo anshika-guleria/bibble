@@ -32,6 +32,6 @@ export function MapToolbar({ onAdd, onUndo, onRedo, onFit, onExport, onSave, onS
       {saveStatus === "error" && <AlertCircle size={14} aria-hidden="true" />}
       <span>{saveStatusLabel[saveStatus]}</span>
     </span>
-    <button className="toolbar-save" onClick={onSave} disabled={saveStatus === "saving"} aria-keyshortcuts="Control+S Meta+S"><Save size={16} />{saveStatus === "error" ? "Retry" : "Save"}</button>
+    <button className="toolbar-save" onClick={onSave} disabled={saveStatus === "saving" || saveStatus === "conflict"} aria-keyshortcuts="Control+S Meta+S"><Save size={16} />{saveStatus === "error" ? "Retry" : "Save"}</button>
   </div>;
 }

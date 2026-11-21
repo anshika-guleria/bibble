@@ -39,7 +39,7 @@ export function MapPageClient() {
   const resolvedMap = remoteLoaded && remoteMap ? remoteMap : map;
   const remoteLoading = hydrated && !map && remoteResult?.id !== id;
 
-  if (!hydrated || (remoteLoading && !resolvedMap)) {
+  if (!hydrated || (!isSampleMap && !remoteLoaded) || (remoteLoading && !resolvedMap)) {
     return (
       <main className="empty-state">
         <h2>Loading map…</h2>

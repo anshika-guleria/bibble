@@ -1,0 +1,78 @@
+BEGIN
+CREATE ROLE
+CREATE ROLE
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE TABLE
+CREATE FUNCTION
+GRANT
+GRANT
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+REVOKE
+GRANT
+CREATE FUNCTION
+DROP TRIGGER
+CREATE TRIGGER
+psql:supabase/migrations/20261026000000_learning_maps.sql:57: NOTICE:  trigger "learning_maps_updated_at" for relation "public.learning_maps" does not exist, skipping
+psql:supabase/migrations/20261026000000_learning_maps.sql:61: NOTICE:  trigger "map_bibbles_updated_at" for relation "public.map_bibbles" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+DROP POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:69: NOTICE:  policy "Users can manage their own maps" for relation "public.learning_maps" does not exist, skipping
+CREATE POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:74: NOTICE:  policy "Users can manage bibbles in their own maps" for relation "public.map_bibbles" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:80: NOTICE:  policy "Users can manage edges in their own maps" for relation "public.map_edges" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+INSERT 0 1
+psql:supabase/migrations/20261026000000_learning_maps.sql:90: NOTICE:  policy "Users can read their map exports" for relation "storage.objects" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:98: NOTICE:  policy "Users can upload their map exports" for relation "storage.objects" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:106: NOTICE:  policy "Users can update their map exports" for relation "storage.objects" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+psql:supabase/migrations/20261026000000_learning_maps.sql:118: NOTICE:  policy "Users can delete their map exports" for relation "storage.objects" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+INSERT 0 2
+INSERT 0 1
+ALTER TABLE
+CREATE FUNCTION
+psql:supabase/migrations/20261121000000_map_versions.sql:14: NOTICE:  trigger "learning_map_version_guard" for relation "public.learning_maps" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+REVOKE
+GRANT
+SET
+SET
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: legacy map defaults to 1; successful save returns 2
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: stale writer rejected; winner graph and version preserved
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: invalid graph rolls back the revision increment
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: legacy clients cannot bypass revision checks
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: explicit overwrite succeeds only with the latest revision
+psql:supabase/tests/map-versioning.sql:55: NOTICE:  PASS: new maps start at 1; duplicate creation is a conflict
+DO
+SET
+psql:supabase/tests/map-versioning.sql:67: NOTICE:  PASS: RLS blocks cross-account versioned writes
+DO
+RESET
+psql:supabase/tests/map-versioning.sql:73: NOTICE:  PASS: anonymous RPC execution is denied
+DO
+ROLLBACK

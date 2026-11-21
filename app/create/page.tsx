@@ -14,7 +14,7 @@ import {
   validateMapFile,
 } from "@/lib/maps/export-import";
 import type { LearningMap } from "@/types/map";
-import { saveMapToSupabase } from "@/lib/maps/persistence";
+import { saveMapWithVersion } from "@/lib/maps/persistence";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import styles from "./create-page.module.css";
@@ -40,12 +40,18 @@ export default function CreatePage() {
     setImportError(null);
     const newMap = createLearningMap(values);
 
-    setMaps((currentMaps) => [...currentMaps, newMap]);
-    const persisted = await saveMapToSupabase(newMap);
-    if (!persisted) {
-      setSaveError("The map was kept in this browser, but Supabase could not save it. Please try again.");
+    const result = await saveMapWithVersion(newMap);
+    if (result.status !== "saved") {
+      if (result.status === "conflict") {
+        setSaveError("A map with this ID already exists. Please try again to create a fresh map.");
+        return;
+      }
+      // Preserve new/imported work for offline recovery without claiming a cloud save.
+      setMaps((currentMaps) => [...currentMaps.filter((m) => m.id !== newMap.id), newMap]);
+      setSaveError("The map was kept in this browser, but could not be saved. Please try again.");
       return;
     }
+    if (result.storage === "cloud") setMaps((currentMaps) => [...currentMaps, result.map]);
     router.push(`/map/${newMap.id}/edit`);
   }
 
@@ -90,12 +96,18 @@ export default function CreatePage() {
     const newMap = createImportedMap(dataValidation.data, existingIds);
 
     // 6. Save and navigate
-    setMaps((currentMaps) => [...currentMaps, newMap]);
-    const persisted = await saveMapToSupabase(newMap);
-    if (!persisted) {
-      setSaveError("The map was kept in this browser, but Supabase could not save it. Please try again.");
+    const result = await saveMapWithVersion(newMap);
+    if (result.status !== "saved") {
+      if (result.status === "conflict") {
+        setSaveError("A map with this ID already exists. Please retry the import to create a fresh map.");
+        return;
+      }
+      // Preserve new/imported work for offline recovery without claiming a cloud save.
+      setMaps((currentMaps) => [...currentMaps.filter((m) => m.id !== newMap.id), newMap]);
+      setSaveError("The map was kept in this browser, but could not be saved. Please try again.");
       return;
     }
+    if (result.storage === "cloud") setMaps((currentMaps) => [...currentMaps, result.map]);
     router.push(`/map/${newMap.id}/edit`);
   }
 

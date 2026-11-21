@@ -36,7 +36,7 @@ export default function EditMapPage() {
   const map = remoteLoaded && remoteMap ? remoteMap : localMap;
   const remoteLoading = hydrated && !localMap && remoteResult?.id !== id;
 
-  if (!hydrated || (remoteLoading && !map)) {
+  if (!hydrated || (!sampleMap && !remoteLoaded) || (remoteLoading && !map)) {
     return (
       <main className="empty-state">
         <h2>Loading map…</h2>

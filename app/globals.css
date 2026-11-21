@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @import "./styles/theme.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -2590,3 +2591,14 @@ html.dark[data-theme="strawberry-lemonade"] {
   filter: none;
   transform: none;
 }
+
+.map-conflict-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: #0009; }
+.map-conflict-dialog { width: min(560px, 100%); max-height: calc(100dvh - 40px); overflow: auto; border: 1px solid var(--border); border-radius: 24px; background: var(--surface, var(--background)); color: var(--foreground); padding: 28px; box-shadow: 0 24px 80px #0005; }
+.map-conflict-dialog h2 { margin: 12px 0; font-size: 26px; line-height: 1.25; }
+.map-conflict-dialog p { margin: 14px 0; line-height: 1.6; }
+.map-conflict-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.map-conflict-actions button { border: 1px solid var(--border); border-radius: 14px; padding: 10px 16px; background: var(--background); cursor: pointer; }
+.map-conflict-actions button:first-child { background: var(--accent); color: var(--accent-foreground, white); }
+.map-conflict-actions button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.map-conflict-actions button:disabled { opacity: .6; cursor: wait; }
+.map-conflict-note { font-size: 13px; color: var(--muted); }

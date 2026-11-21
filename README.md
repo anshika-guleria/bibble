@@ -495,3 +495,7 @@ These are possible directions, not claims that the features already exist.
 *Made with care, curiosity, and probably a cup of tea.* 🍵
 
 </div>
+
+### Concurrent map editing
+
+Map saves use revision tokens to detect stale edits across tabs and devices. See [map versioning and conflict recovery](docs/map-versioning.md) for the required migration, rollout notes, and verification steps.
