@@ -25,7 +25,10 @@ export function AuthControls() {
   if (user) {
     return (
       <form action={logout}>
-        <button type="submit" className="nav-login">
+        <button
+          type="submit"
+          className="nav-login"
+        >
           <LogOut size={15} /> Log out
         </button>
       </form>

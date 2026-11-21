@@ -3,7 +3,7 @@
 import { CreateMapForm } from "@/app/create/_components/create-map-form";
 import { CreateMapHeader } from "@/app/create/_components/create-map-header";
 import { CreateMapIntro } from "@/app/create/_components/create-map-intro";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMapSession, useMapStorage } from "@/components/auth/map-session-provider";
 import {
   createLearningMap,
   type CreateLearningMapInput,
@@ -21,7 +21,8 @@ import styles from "./create-page.module.css";
 
 export default function CreatePage() {
   const router = useRouter();
-  const [storedMaps, setMaps] = useLocalStorage<LearningMap[]>("bibble-maps", []);
+  const userId = useMapSession();
+  const [storedMaps, setMaps] = useMapStorage<LearningMap[]>("bibble-maps", []);
   const [values, setValues] = useState<CreateLearningMapInput>({
     title: "",
     description: "",
@@ -41,7 +42,7 @@ export default function CreatePage() {
     const newMap = createLearningMap(values);
 
     setMaps((currentMaps) => [...currentMaps, newMap]);
-    const persisted = await saveMapToSupabase(newMap);
+    const persisted = await saveMapToSupabase(newMap, userId ?? undefined);
     if (!persisted) {
       setSaveError("The map was kept in this browser, but Supabase could not save it. Please try again.");
       return;
@@ -91,7 +92,7 @@ export default function CreatePage() {
 
     // 6. Save and navigate
     setMaps((currentMaps) => [...currentMaps, newMap]);
-    const persisted = await saveMapToSupabase(newMap);
+    const persisted = await saveMapToSupabase(newMap, userId ?? undefined);
     if (!persisted) {
       setSaveError("The map was kept in this browser, but Supabase could not save it. Please try again.");
       return;

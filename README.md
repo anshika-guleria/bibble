@@ -315,6 +315,8 @@ Create a Supabase project, then copy its URL and publishable key from **Project 
 ```env
 SUPABASE_URL="https://your-project.supabase.co"
 SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
 ```
 
 In the Supabase Dashboard:
@@ -328,7 +330,7 @@ Apply the checked-in SQL migration in `supabase/migrations/20261026000000_learni
 
 New accounts receive a confirmation email when email confirmation is enabled. The callback exchanges the confirmation code for a secure Supabase session. Guest browsing, sample maps, previews, and browser-local map editing remain available without an account.
 
-Never commit `.env`, database files, session secrets, or plaintext passwords. Sample maps and guest browsing remain available without an account. Existing localStorage maps are not automatically migrated or deleted; sign-in only enables persistence for maps created or saved through the authenticated flow.
+Never commit `.env`, database files, session secrets, or plaintext passwords. Sample maps and guest browsing remain available without an account. Guest maps are stored under `bibble-maps:guest`; account caches use `bibble-maps:<user_id>`. After sign-in, customized guest maps are copied into the account with fresh graph IDs. Guest originals are removed only after cloud confirmation and a successful account-cache write. Failed uploads remain available locally for retry. Logout isolates the private cache without deleting offline work. Legacy unscoped maps are claimed once by the guest workspace.
 
 ## 🧑‍💻 Contributing
 

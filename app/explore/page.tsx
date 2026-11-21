@@ -4,21 +4,25 @@ import { MapCard } from "@/components/explore/map-card";
 import { SiteHeader } from "@/components/site-header";
 import { categories } from "@/data/categories";
 import { sampleMaps } from "@/data/sample-maps";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMapSession, useMapStorage } from "@/components/auth/map-session-provider";
 import type { LearningMap } from "@/types/map";
 import { deleteMapFromSupabase, listMapsFromSupabase } from "@/lib/maps/persistence";
+import { reconcileLocalAndRemoteMaps } from "@/lib/maps/sync";
 import { Search, SlidersHorizontal, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export default function ExplorePage() {
+  const userId = useMapSession();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All maps");
-  // Read user-saved/custom maps and the IDs of system maps the user removed.
-  const [storedMaps, setStoredMaps] = useLocalStorage<LearningMap[]>("bibble-maps", []);
-  const [deletedMapIds, setDeletedMapIds] = useLocalStorage<string[]>("bibble-deleted-maps", []);
+  const [storedMaps, setStoredMaps] = useMapStorage<LearningMap[]>("bibble-maps", []);
+  const [deletedMapIds, setDeletedMapIds] = useMapStorage<string[]>("bibble-deleted-maps", []);
   const [remoteMaps, setRemoteMaps] = useState<LearningMap[]>([]);
+
   useEffect(() => {
-    listMapsFromSupabase().then(setRemoteMaps).catch(() => setRemoteMaps([]));
+    let active = true;
+    listMapsFromSupabase().then((maps) => { if (active) setRemoteMaps(maps); }).catch(() => {});
+    return () => { active = false; };
   }, []);
 
   // Merge: stored maps override matching sample maps, user-created maps are appended,
@@ -36,13 +40,8 @@ export default function ExplorePage() {
         merged.push(stored);
       }
     }
-    for (const remote of remoteMaps) {
-      if (deletedMapIds.includes(remote.id)) continue;
-      const existingIndex = merged.findIndex((map) => map.id === remote.id);
-      if (existingIndex >= 0) merged[existingIndex] = remote;
-      else merged.push(remote);
-    }
-    return merged;
+    return reconcileLocalAndRemoteMaps(merged, remoteMaps)
+      .filter((map) => !deletedMapIds.includes(map.id));
   }, [storedMaps, deletedMapIds, remoteMaps]);
 
   const maps = useMemo(
@@ -76,6 +75,7 @@ export default function ExplorePage() {
           <span className="eyebrow"><Star size={14} /> Small worlds of knowledge</span>
           <h1>Find a map that feels like yours.</h1>
           <p>Browse a few learning worlds made for wandering, connecting, and coming back to.</p>
+          <p>{userId ? "Your account workspace · Private offline maps stay with this account." : "Guest workspace · Your maps are saved on this device and sync when you sign in."}</p>
         </div>
         <div className="explore-stats"><strong>{allMaps.length}</strong><span>maps<br />to explore</span></div>
       </section>

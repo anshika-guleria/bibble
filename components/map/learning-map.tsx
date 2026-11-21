@@ -6,7 +6,7 @@ import { MapToolbar } from "@/components/map/map-toolbar";
 import { MapHeader } from "@/components/map/map-header";
 import { ShortcutsDialog } from "@/components/map/shortcuts-dialog";
 import { getShortcutAction, isEditableTarget } from "@/lib/map-shortcuts";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMapSession, useMapStorage } from "@/components/auth/map-session-provider";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
@@ -94,6 +94,7 @@ const createHistory = (nodes: Node<BibbleNodeData>[], edges: Edge[]): EditHistor
 });
 
 export function LearningMapCanvas({ initialMap, editable = false, preferInitialMap = false }: { initialMap: LearningMap; editable?: boolean; preferInitialMap?: boolean }) {
+  const userId = useMapSession();
   const initialFlow = useMemo(() => mapToFlow(initialMap), [initialMap]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BibbleNodeData>>(initialFlow.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlow.edges);
@@ -107,7 +108,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
   const [saveError, setSaveError] = useState<string | null>(null);
   const [graphNotice, setGraphNotice] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [storedMaps, setStoredMaps, hydrated] = useLocalStorage<LearningMap[]>("bibble-maps", []);
+  const [storedMaps, setStoredMaps, hydrated] = useMapStorage<LearningMap[]>("bibble-maps", []);
   const flowRef = useRef<ReactFlowInstance<Node<BibbleNodeData>, Edge> | null>(null);
   const historyRef = useRef<EditHistory | null>(null);
   const loadedMapIdRef = useRef<string | null>(null);
@@ -320,13 +321,13 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     const currentNodes = updatedBibble
       ? nodesRef.current.map((n) => n.id === updatedBibble.id ? { ...n, data: updatedBibble as BibbleNodeData } : n)
       : nodesRef.current;
-    const next = flowToMap(initialMap, currentNodes, edgesRef.current);
+    const next = { ...flowToMap(initialMap, currentNodes, edgesRef.current), updatedAt: new Date().toISOString() };
     setStoredMaps((current) => [...current.filter((m) => m.id !== next.id), next]);
     setSaveError(null);
     // Edits already dispatched are covered by this save; later ones keep the map unsaved.
     const version = saveVersionRef.current;
     dispatchSave({ type: "save-start" });
-    const persisted = await saveMapToSupabase(next);
+    const persisted = await saveMapToSupabase(next, userId ?? undefined);
     if (!persisted) {
       dispatchSave({ type: "save-failure", version });
       setSaveError("Your local changes are saved, but Supabase could not be updated. Please try again.");
@@ -335,7 +336,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     dispatchSave({ type: "save-success", version });
     setJustSaved(true);
     window.setTimeout(() => setJustSaved(false), 1800);
-  }, [initialMap, setStoredMaps]);
+  }, [initialMap, setStoredMaps, userId]);
 
   const addBibble = () => {
     const id = `bibble-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DailyStreakInfo, FocusSession, MapProgressItem } from "@/types/progress";
 import type { LearningMap } from "@/types/map";
 import { sampleMaps } from "@/data/sample-maps";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMapStorage } from "@/components/auth/map-session-provider";
 import {
   calculateStreak,
   calculateTotalMinutes,
@@ -19,7 +19,7 @@ import {
 export function useStudyStats() {
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [hydrated, setHydrated] = useState(false);
-  const [storedMaps] = useLocalStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
+  const [storedMaps] = useMapStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
 
   // Hydrate sessions from localStorage on mount
   useEffect(() => {

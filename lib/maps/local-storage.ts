@@ -9,13 +9,13 @@ const storedMapSchema = learningMapImportSchema.extend({
 });
 
 export function normalizeLocalMapData(key: string, value: unknown): unknown {
-  if (key === "bibble-maps") {
+  if (key === "bibble-maps" || key.startsWith("bibble-maps:")) {
     // Keep valid siblings and their extra fields rather than replacing the whole collection.
     return Array.isArray(value)
       ? value.filter((map) => storedMapSchema.safeParse(map).success)
       : [];
   }
-  if (key === "bibble-deleted-maps") {
+  if (key === "bibble-deleted-maps" || key.startsWith("bibble-deleted-maps:")) {
     return Array.isArray(value)
       ? value.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
       : [];

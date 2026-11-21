@@ -2,7 +2,7 @@
 
 import { LearningMapCanvas } from "@/components/map/learning-map";
 import { sampleMaps } from "@/data/sample-maps";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMapStorage } from "@/components/auth/map-session-provider";
 import type { LearningMap } from "@/types/map";
 import { loadMapFromSupabase } from "@/lib/maps/persistence";
 import { ArrowLeft } from "lucide-react";
@@ -12,8 +12,8 @@ import { useEffect, useMemo, useState } from "react";
 
 export function MapPageClient() {
   const { id } = useParams<{ id: string }>();
-  const [storedMaps, , storedHydrated] = useLocalStorage<LearningMap[]>("bibble-maps", []);
-  const [deletedMapIds, , deletedHydrated] = useLocalStorage<string[]>("bibble-deleted-maps", []);
+  const [storedMaps, , storedHydrated] = useMapStorage<LearningMap[]>("bibble-maps", []);
+  const [deletedMapIds, , deletedHydrated] = useMapStorage<string[]>("bibble-deleted-maps", []);
   const hydrated = storedHydrated && deletedHydrated;
   const [remoteResult, setRemoteResult] = useState<{ id: string; map: LearningMap | null } | null>(null);
 

@@ -3,6 +3,10 @@ import { sampleMaps } from "@/data/sample-maps";
 import { normalizeLocalMapData } from "./local-storage";
 
 describe("map storage hydration", () => {
+  it("normalizes user-scoped map and deletion caches", () => {
+    expect(normalizeLocalMapData("bibble-maps:account-a", [sampleMaps[0], null])).toEqual([sampleMaps[0]]);
+    expect(normalizeLocalMapData("bibble-deleted-maps:guest", ["map-a", null])).toEqual(["map-a"]);
+  });
   it("keeps every valid sample map and its saved values intact", () => {
     const maps = structuredClone(sampleMaps);
     maps[0].title = "My saved title";

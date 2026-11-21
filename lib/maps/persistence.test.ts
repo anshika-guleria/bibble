@@ -81,6 +81,18 @@ describe("atomic Supabase persistence", () => {
   });
 
   describe("saveMapToSupabase", () => {
+    it("does not acknowledge a migration when cloud persistence is unconfigured", async () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      expect(await saveMapToSupabase(mockMap, "user-123")).toBe(false);
+      expect(mockSupabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it.each([null, { id: "another-user" }])("rejects migration for a missing or different account: %j", async (user) => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user } });
+      expect(await saveMapToSupabase(mockMap, "user-123")).toBe(false);
+      expect(mockSupabase.rpc).not.toHaveBeenCalled();
+    });
+
     it("returns true early if Supabase is unconfigured", async () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       const result = await saveMapToSupabase(mockMap);

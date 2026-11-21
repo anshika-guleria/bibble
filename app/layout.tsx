@@ -4,6 +4,8 @@ import { DM_Serif_Display, Nunito, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { OfflineProvider } from "@/components/error/offline-provider";
+import { MapSessionProvider } from "@/components/auth/map-session-provider";
+import { createServerClient } from "@/lib/supabase/server";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -23,7 +25,13 @@ export const metadata: Metadata = {
   description: "A cozy little space to grow what you know.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  let userId: string | null = null;
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id ?? null;
+  }
   return (
     <html
       lang="en"
@@ -49,7 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full" suppressHydrationWarning>
         <OfflineProvider>
-          {children}
+          <MapSessionProvider key={userId ?? "guest"} userId={userId}>{children}</MapSessionProvider>
         </OfflineProvider>
       </body>
     </html>

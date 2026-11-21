@@ -33,6 +33,7 @@ export interface MapEdge {
 }
 
 export interface LearningMap {
+  updatedAt?: string;
   id: string;
   title: string;
   description: string;
