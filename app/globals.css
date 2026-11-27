@@ -2602,3 +2602,25 @@ html.dark[data-theme="strawberry-lemonade"] {
 .map-conflict-actions button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .map-conflict-actions button:disabled { opacity: .6; cursor: wait; }
 .map-conflict-note { font-size: 13px; color: var(--muted); }
+
+.nav-review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-review-badge:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.6);
+  transform: translateY(-1px);
+}
+

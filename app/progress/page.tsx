@@ -3,7 +3,9 @@
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { ReviewSessionModal } from "@/components/reviews/review-session-modal";
 import { useDialog } from "@/hooks/use-dialog";
+import { useReviewQueue } from "@/hooks/use-review-queue";
 import { useStudyStats } from "@/hooks/use-study-stats";
 import { useTheme } from "@/hooks/use-theme";
 import styles from "./progress.module.css";
@@ -52,6 +54,8 @@ export default function ProgressPage() {
   // Modals
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const { summary: reviewSummary } = useReviewQueue();
   const logDialogRef = useDialog<HTMLDivElement>(isLogModalOpen, () => setIsLogModalOpen(false));
   const resetDialogRef = useDialog<HTMLDivElement>(isResetModalOpen, () => setIsResetModalOpen(false));
   const logTitleId = useId();
@@ -267,6 +271,34 @@ export default function ProgressPage() {
                 {mapOverview.averageProgress}% overall map momentum
               </p>
             </div>
+          </div>
+
+          {/* Active Recall Reviews Card */}
+          <div className={styles.statCard}>
+            <div className={styles.statCardHeader}>
+              <span className={styles.statCardLabel}>Active Recall Reviews</span>
+              <div className={styles.statCardIcon}>
+                <Sparkles size={18} />
+              </div>
+            </div>
+            <div>
+              <div className={styles.statCardValue}>
+                {reviewSummary.dueCount}{" "}
+                <em>{reviewSummary.dueCount === 1 ? "card due" : "cards due"}</em>
+              </div>
+              <p className={styles.statCardSubtext}>
+                <BookOpen size={14} />
+                {reviewSummary.totalTrackedNodes} concept{reviewSummary.totalTrackedNodes === 1 ? "" : "s"} scheduled with SM-2
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              style={{ marginTop: 12, padding: "8px 14px", fontSize: "13px" }}
+              onClick={() => setIsReviewModalOpen(true)}
+            >
+              <Sparkles size={14} /> Start Review Session
+            </button>
           </div>
         </section>
 
@@ -613,6 +645,11 @@ export default function ProgressPage() {
           </div>
         </div>
       )}
+
+      <ReviewSessionModal
+        open={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+      />
     </main>
   );
 }

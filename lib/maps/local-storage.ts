@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { learningMapImportSchema } from "./export-import";
+import type { LearningMap } from "@/types/map";
 
 const storedMapSchema = learningMapImportSchema.extend({
   id: z.string().min(1),
@@ -22,4 +23,25 @@ export function normalizeLocalMapData(key: string, value: unknown): unknown {
       : [];
   }
   return value;
+}
+
+export function getStoredMaps(key = "bibble-maps"): LearningMap[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return normalizeLocalMapData(key, parsed) as LearningMap[];
+  } catch {
+    return [];
+  }
+}
+
+export function setStoredMaps(maps: LearningMap[], key = "bibble-maps"): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(maps));
+    window.dispatchEvent(new Event("storage"));
+  } catch {
+    // Ignore quota errors
+  }
 }
