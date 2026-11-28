@@ -42,6 +42,7 @@ export default function ProgressPage() {
     mapItems,
     mapOverview,
     hydrated,
+    isCloudSync,
     recordSession,
     resetStats,
   } = useStudyStats();
@@ -130,6 +131,7 @@ export default function ProgressPage() {
           <div className={styles.heroContent}>
             <span className={styles.heroEyebrow}>
               <span>{motif.brandEmoji}</span> My Learning Progress
+              {isCloudSync && <span className="cloud-sync-badge">✓ Cloud Synced</span>}
             </span>
             <h1 className={styles.heroTitle}>
               Watch what you know <em>grow.</em>

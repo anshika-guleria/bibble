@@ -213,3 +213,5 @@ export function computeMapProgressItems(storedMaps: LearningMap[] = []): MapProg
 }
 
 export * from "./reviews";
+export * from "./progress/analytics";
+

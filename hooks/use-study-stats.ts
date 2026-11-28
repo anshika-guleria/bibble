@@ -2,7 +2,7 @@
 import { FOCUS_CHANGE } from "@/lib/focus-sessions";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { DailyStreakInfo, FocusSession, MapProgressItem } from "@/types/progress";
+import type { DailyStreakInfo, FocusSession } from "@/types/progress";
 import type { LearningMap } from "@/types/map";
 import { sampleMaps } from "@/data/sample-maps";
 import { useMapStorage } from "@/components/auth/map-session-provider";
@@ -10,17 +10,18 @@ import {
   calculateStreak,
   calculateTotalMinutes,
   clearFocusSessions,
-  computeMapProgressItems,
   formatMinutes,
   loadSessionsFromStorage,
   recordFocusSession as recordSessionLib,
   STORAGE_KEY_MAPS,
 } from "@/lib/progress";
+import { loadUserProgressAnalytics } from "@/lib/progress/analytics";
 
 export function useStudyStats() {
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [storedMaps] = useMapStorage<LearningMap[]>(STORAGE_KEY_MAPS, []);
+  const [deletedIds] = useMapStorage<string[]>("bibble-deleted-maps", []);
 
   // Hydrate sessions from localStorage on mount
   useEffect(() => {
@@ -52,32 +53,27 @@ export function useStudyStats() {
   const formattedDuration = useMemo(() => formatMinutes(totalMinutes), [totalMinutes]);
   const streak = useMemo<DailyStreakInfo>(() => calculateStreak(sessions), [sessions]);
 
-  // Compute map progress items combining sample maps with storedMaps
-  const mapItems = useMemo<MapProgressItem[]>(() => {
-    return computeMapProgressItems(storedMaps);
-  }, [storedMaps]);
+  // Compute map progress items and aggregate metrics using the analytics engine
+  const analyticsResult = useMemo(() => {
+    return loadUserProgressAnalytics({
+      storedMaps,
+      deletedIds,
+    });
+  }, [storedMaps, deletedIds]);
+
+  const mapItems = analyticsResult.items;
 
   const mapOverview = useMemo(() => {
-    const totalMaps = mapItems.length;
-    const completedMaps = mapItems.filter((m) => m.status === "completed").length;
-    const inProgressMaps = mapItems.filter((m) => m.status === "in-progress").length;
-    const notStartedMaps = mapItems.filter((m) => m.status === "not-started").length;
-    const averageProgress = totalMaps > 0
-      ? Math.round(mapItems.reduce((acc, m) => acc + m.progress, 0) / totalMaps)
-      : 0;
-    const totalBibbles = mapItems.reduce((acc, m) => acc + m.totalBibbles, 0);
-    const completedBibbles = mapItems.reduce((acc, m) => acc + m.completedBibbles, 0);
-
     return {
-      totalMaps,
-      completedMaps,
-      inProgressMaps,
-      notStartedMaps,
-      averageProgress,
-      totalBibbles,
-      completedBibbles,
+      totalMaps: analyticsResult.metrics.totalMaps,
+      completedMaps: analyticsResult.metrics.completedMaps,
+      inProgressMaps: analyticsResult.metrics.inProgressMaps,
+      notStartedMaps: analyticsResult.metrics.notStartedMaps,
+      averageProgress: Math.round(analyticsResult.metrics.averageProgress),
+      totalBibbles: analyticsResult.metrics.totalConcepts,
+      completedBibbles: analyticsResult.metrics.conceptsMastered,
     };
-  }, [mapItems]);
+  }, [analyticsResult]);
 
   const personalMapCount = useMemo(
     () => storedMaps.filter((map) => !sampleMaps.some((sample) => sample.id === map.id)).length,
@@ -93,9 +89,6 @@ export function useStudyStats() {
       note?: string;
       completedAt?: string;
     }) => {
-      // recordSessionLib persists the session and dispatches
-      // "bibble-focus-session-recorded", whose listener below is the single
-      // owner of session state (it de-duplicates by session id).
       return recordSessionLib(input);
     },
     []
@@ -114,6 +107,8 @@ export function useStudyStats() {
     mapOverview,
     personalMapCount,
     hydrated,
+    isCloudSync: analyticsResult.isCloudSync,
+    categoryDistribution: analyticsResult.metrics.categoryDistribution,
     recordSession,
     resetStats,
   };

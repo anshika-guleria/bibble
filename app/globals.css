@@ -2602,3 +2602,19 @@ html.dark[data-theme="strawberry-lemonade"] {
 .map-conflict-actions button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .map-conflict-actions button:disabled { opacity: .6; cursor: wait; }
 .map-conflict-note { font-size: 13px; color: var(--muted); }
+
+.cloud-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
