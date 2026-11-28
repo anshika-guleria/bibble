@@ -10,6 +10,7 @@ import { getShortcutAction, isEditableTarget } from "@/lib/map-shortcuts";
 import { useMapSession, useMapStorage } from "@/components/auth/map-session-provider";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { exportMapAsBibbleJson } from "@/lib/maps/export-import";
+import { applySugiyamaLayout, calculateSmartPosition } from "@/lib/maps/layout";
 import { flowToMap, mapToFlow } from "@/lib/map-utils";
 import { loadLatestMap, saveMapWithVersion } from "@/lib/maps/persistence";
 import { recordMapRevision } from "@/lib/maps/history";
@@ -433,7 +434,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
 
   const addBibble = () => {
     const id = `bibble-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const position = { x: 320, y: 180 };
+    const position = calculateSmartPosition(nodesRef.current, edgesRef.current, selectedId);
     const nextNodes: Node<BibbleNodeData>[] = [
       ...nodesRef.current,
       {
@@ -520,7 +521,20 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
     setSelectedId(id);
   };
 
-  const fitView = () => flowRef.current?.fitView({ padding: 0.22 });
+  const fitView = useCallback(() => {
+    flowRef.current?.fitView({ padding: 0.22 });
+  }, []);
+
+  const handleAutoLayout = useCallback(() => {
+    if (!editable) return;
+    const layoutedNodes = applySugiyamaLayout(nodesRef.current, edgesRef.current);
+    nodesRef.current = layoutedNodes;
+    setNodes(layoutedNodes);
+    recordHistory(layoutedNodes, edgesRef.current);
+    window.setTimeout(() => {
+      fitView();
+    }, 40);
+  }, [editable, fitView, recordHistory, setNodes]);
 
   const handleExport = useCallback(() => {
     const current = flowToMap(initialMap, nodesRef.current, edgesRef.current);
@@ -594,6 +608,7 @@ export function LearningMapCanvas({ initialMap, editable = false, preferInitialM
              onUndo={undo}
              onRedo={redo}
              onFit={fitView}
+              onAutoLayout={handleAutoLayout}
              onExport={handleExport}
              onSave={() => saveMap()}
              onShowHistory={() => setShowHistory(true)}

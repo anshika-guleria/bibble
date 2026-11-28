@@ -1,13 +1,14 @@
 "use client";
 
-import { AlertCircle, Check, Download, History, Keyboard, Loader2, Plus, Redo2, Save, Undo2, ZoomIn } from "lucide-react";
+import { AlertCircle, Check, Download, History, Keyboard, LayoutGrid, Loader2, Plus, Redo2, Save, Undo2, ZoomIn } from "lucide-react";
 import { saveStatusLabel, type SaveStatus } from "@/lib/maps/save-status";
 
-export function MapToolbar({ onAdd, onUndo, onRedo, onFit, onExport, onSave, onShowHistory, onShowShortcuts, saveStatus, canUndo, canRedo }: {
+export function MapToolbar({ onAdd, onUndo, onRedo, onFit, onAutoLayout, onExport, onSave, onShowHistory, onShowShortcuts, saveStatus, canUndo, canRedo }: {
   onAdd: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onFit: () => void;
+  onAutoLayout?: () => void;
   onExport?: () => void;
   onSave: () => void;
   onShowHistory?: () => void;
@@ -22,6 +23,9 @@ export function MapToolbar({ onAdd, onUndo, onRedo, onFit, onExport, onSave, onS
     <button className="toolbar-button" onClick={onUndo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
     <button className="toolbar-button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z or Ctrl+Y)"><Redo2 size={16} /></button>
     <button className="toolbar-button toolbar-text-button" onClick={onFit} aria-keyshortcuts="F"><ZoomIn size={16} /> Fit view</button>
+    {onAutoLayout && (
+      <button className="toolbar-button toolbar-text-button" onClick={onAutoLayout} aria-label="Auto layout" title="Reformat roadmap into clean hierarchical layers" data-testid="toolbar-auto-layout"><LayoutGrid size={16} /> Auto layout</button>
+    )}
     {onShowHistory && (
       <button className="toolbar-button toolbar-text-button" onClick={onShowHistory} aria-label="Revision history" title="View map revision history" data-testid="toolbar-history"><History size={16} /> History</button>
     )}
